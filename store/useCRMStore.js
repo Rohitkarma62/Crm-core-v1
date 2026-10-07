@@ -99,4 +99,25 @@ export const useCRMStore=create((set,get)=>({
     const db=await getDatabase();
     await db.runAsync('INSERT OR REPLACE INTO invoices(sale_id,invoice_no,pdf_path,date) VALUES(?,?,?,?)',[saleId,invoiceNo,pdfPath||null,date||new Date().toISOString()]);
   }
+  loadReports:async()=>{
+    const db=await getDatabase();
+    const [summary,methods,monthly]=await Promise.all([
+      db.getFirstAsync(`SELECT COUNT(*) sales_count,COALESCE(SUM(amount),0) revenue,COALESCE(SUM(paid_amount),0) collection,COALESCE(SUM(pending_amount),0) pending FROM sales`),
+      db.getAllAsync(`SELECT method,COUNT(*) count,COALESCE(SUM(amount),0) amount FROM payments GROUP BY method ORDER BY amount DESC`),
+      db.getAllAsync(`SELECT substr(date,1,7) month,COUNT(*) sales_count,COALESCE(SUM(amount),0) revenue,COALESCE(SUM(paid_amount),0) collection FROM sales GROUP BY substr(date,1,7) ORDER BY month DESC LIMIT 12`)
+    ]);
+    set({reportSummary:summary||{},reportMethods:methods||[],reportMonthly:monthly||[]});
+  },
+  loadCompanySettings:async()=>{
+    const db=await getDatabase();
+    const row=await db.getFirstAsync('SELECT * FROM company_settings LIMIT 1');
+    set({companySettings:row||{}}); return row;
+  },
+  saveCompanySettings:async(data)=>{
+    const db=await getDatabase();
+    const row=await db.getFirstAsync('SELECT id FROM company_settings LIMIT 1');
+    if(row) await db.runAsync('UPDATE company_settings SET name=?,owner=?,logo_uri=?,signature_uri=?,terms=? WHERE id=?',[data.name||'',data.owner||'',data.logo_uri||null,data.signature_uri||null,data.terms||'',row.id]);
+    else await db.runAsync('INSERT INTO company_settings(name,owner,logo_uri,signature_uri,terms) VALUES(?,?,?,?,?)',[data.name||'',data.owner||'',data.logo_uri||null,data.signature_uri||null,data.terms||'']);
+    return get().loadCompanySettings();
+  }
 }));
