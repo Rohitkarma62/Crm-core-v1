@@ -1,6 +1,8 @@
 import React from 'react';
 import {StatusBar} from 'react-native';
+import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import {colors} from '../../theme';
 import DashboardScreen from '../screens/DashboardScreen';
 import LeadsScreen from '../screens/LeadsScreen';
 import CustomersScreen from '../screens/CustomersScreen';
@@ -8,27 +10,40 @@ import SalesScreen from '../screens/SalesScreen';
 import PaymentsScreen from '../screens/PaymentsScreen';
 import ReportsScreen from '../screens/ReportsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import MoreScreen from '../screens/MoreScreen';
 
+const Tabs=createBottomTabNavigator();
 const Stack=createNativeStackNavigator();
 
+function MainTabs(){
+  return <Tabs.Navigator screenOptions={{
+    headerShown:false,
+    tabBarStyle:{backgroundColor:colors.bg,borderTopColor:colors.border,height:64,paddingTop:7,paddingBottom:7},
+    tabBarActiveTintColor:colors.text,
+    tabBarInactiveTintColor:colors.soft,
+    tabBarLabelStyle:{fontSize:11,fontWeight:'700'}
+  }}>
+    <Tabs.Screen name="Home" component={DashboardScreen}/>
+    <Tabs.Screen name="Leads" component={LeadsScreen}/>
+    <Tabs.Screen name="Customers" component={CustomersScreen}/>
+    <Tabs.Screen name="Sales" component={SalesScreen}/>
+    <Tabs.Screen name="More" component={MoreScreen}/>
+  </Tabs.Navigator>;
+}
+
 export default function AppNavigator(){
-  return (
-    <>
-      <StatusBar barStyle="light-content" backgroundColor="#000000"/>
-      <Stack.Navigator screenOptions={{
-        headerStyle:{backgroundColor:'#000000'},
-        headerTintColor:'#ffffff',
-        headerTitleStyle:{fontWeight:'800'},
-        contentStyle:{backgroundColor:'#000000'}
-      }}>
-        <Stack.Screen name="Dashboard" component={DashboardScreen}/>
-        <Stack.Screen name="Leads" component={LeadsScreen}/>
-        <Stack.Screen name="Customers" component={CustomersScreen}/>
-        <Stack.Screen name="Sales" component={SalesScreen}/>
-        <Stack.Screen name="Payments" component={PaymentsScreen}/>
-        <Stack.Screen name="Reports" component={ReportsScreen}/>
-        <Stack.Screen name="Settings" component={SettingsScreen}/>
-      </Stack.Navigator>
-    </>
-  );
+  return <>
+    <StatusBar barStyle="light-content" backgroundColor={colors.bg}/>
+    <Stack.Navigator screenOptions={{
+      headerStyle:{backgroundColor:colors.bg},
+      headerTintColor:colors.text,
+      headerTitleStyle:{fontWeight:'800'},
+      contentStyle:{backgroundColor:colors.bg}
+    }}>
+      <Stack.Screen name="Main" component={MainTabs} options={{headerShown:false}}/>
+      <Stack.Screen name="Payments" component={PaymentsScreen}/>
+      <Stack.Screen name="Reports" component={ReportsScreen}/>
+      <Stack.Screen name="Settings" component={SettingsScreen}/>
+    </Stack.Navigator>
+  </>;
 }
