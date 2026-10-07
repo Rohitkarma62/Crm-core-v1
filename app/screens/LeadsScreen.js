@@ -6,6 +6,7 @@ import Button from '../../components/Button';
 import Input from '../../components/Input';
 import Card from '../../components/Card';
 import {colors,spacing,typography} from '../../theme';
+import {LEAD_STAGES} from '../core/constants';
 
 const STAGES=LEAD_STAGES;
 const empty={name:'',phone:'',details:'',source:'',status:'New',stages:'New',follow_up_date:''};
