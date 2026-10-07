@@ -2,7 +2,7 @@ import React,{useEffect,useState} from 'react';
 import {useFocusEffect} from '@react-navigation/native';
 import {Alert,Image,SafeAreaView,ScrollView,StyleSheet,Text,View,Linking} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import {generatePDF} from 'react-native-html-to-pdf';
 import {useCRMStore} from '../../store/useCRMStore';
 import Button from '../../components/Button';

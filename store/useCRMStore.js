@@ -62,8 +62,15 @@ export const useCRMStore=create((set,get)=>({
   },
   loadCustomers:async()=>{
     const db=await getDatabase();
-    const rows=await db.getAllAsync(`SELECT c.*,COUNT(s.id) sale_count,COALESCE(SUM(s.amount),0) total_sales,COALESCE(SUM(s.discount_amount),0) total_discount,MAX(s.date) last_job_date
-      FROM customers c LEFT JOIN sales s ON s.customer_id=c.id GROUP BY c.id ORDER BY c.id DESC`);
+    const rows=await db.getAllAsync(`SELECT c.id,c.name,c.phone,
+      COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.customer_id=c.id),0) total_paid,
+      COALESCE((SELECT SUM(s.pending_amount) FROM sales s WHERE s.customer_id=c.id),0) pending_amount,
+      COUNT(s.id) sale_count,
+      COALESCE(SUM(s.amount),0) total_sales,
+      COALESCE(SUM(s.discount_amount),0) total_discount,
+      MAX(s.date) last_job_date
+      FROM customers c LEFT JOIN sales s ON s.customer_id=c.id
+      GROUP BY c.id,c.name,c.phone ORDER BY c.id DESC`);
     set({customers:rows||[]}); return rows||[];
   },
   loadSales:async()=>{
@@ -98,13 +105,14 @@ export const useCRMStore=create((set,get)=>({
     if(!sale) throw new Error('Sale not found');
     const remaining=Number(sale.amount)-Number(sale.paid_amount||0);
     if(value>remaining+0.0001) throw new Error('Payment pending amount se zyada nahi ho sakta');
-    await db.withTransactionAsync(async()=>{
-      await db.runAsync('INSERT INTO payments(sale_id,customer_id,amount,method,screenshot_uri,date) VALUES(?,?,?,?,?,?)',[saleId,customerId,value,method,screenshotUri||null,new Date().toISOString()]);
-    const paid=Number(sale.paid_amount||0)+value;
-    const pending=Math.max(0,Number(sale.amount)-paid);
-    const status=pending<=0.0001?'Paid':'Pending';
-    await db.runAsync('UPDATE sales SET paid_amount=?,pending_amount=?,status=? WHERE id=?',[paid,pending,status,saleId]);
-      await db.runAsync('UPDATE customers SET total_paid=COALESCE((SELECT SUM(amount) FROM payments WHERE customer_id=?),0),pending_amount=COALESCE((SELECT SUM(pending_amount) FROM sales WHERE customer_id=?),0) WHERE id=?',[customerId,customerId,customerId]);
+    await db.withExclusiveTransactionAsync(async(txn)=>{
+      await txn.runAsync('INSERT INTO payments(sale_id,customer_id,amount,method,screenshot_uri,date) VALUES(?,?,?,?,?,?)',[saleId,customerId,value,method,screenshotUri||null,new Date().toISOString()]);
+      const paidRow=await txn.getFirstAsync('SELECT COALESCE(SUM(amount),0) paid FROM payments WHERE sale_id=?',[saleId]);
+      const paid=Number(paidRow?.paid||0);
+      const pending=Math.max(0,Number(sale.amount)-paid);
+      const status=pending<=0.0001?'Paid':'Pending';
+      await txn.runAsync('UPDATE sales SET paid_amount=?,pending_amount=?,status=? WHERE id=?',[paid,pending,status,saleId]);
+      await txn.runAsync('UPDATE customers SET total_paid=COALESCE((SELECT SUM(amount) FROM payments WHERE customer_id=?),0),pending_amount=COALESCE((SELECT SUM(pending_amount) FROM sales WHERE customer_id=?),0) WHERE id=?',[customerId,customerId,customerId]);
     });
     await get().loadSales(); await get().loadCustomers(); await get().refreshDashboard(); await get().loadPayments(saleId);
   },

@@ -1,1 +1,41 @@
-name: Android Release Build\n\non:\n  push:\n    branches: [main]\n  pull_request:\n    branches: [main]\n  workflow_dispatch:\n\nconcurrency:\n  group: android-release-${{ github.ref }}\n  cancel-in-progress: true\n\njobs:\n  android-release:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout\n        uses: actions/checkout@v4\n      - name: Setup Node\n        uses: actions/setup-node@v4\n        with:\n          node-version: 20\n          cache: npm\n      - name: Setup Java\n        uses: actions/setup-java@v4\n        with:\n          distribution: temurin\n          java-version: '17'\n      - name: Install dependencies\n        run: npm install\n      - name: Generate native Android project\n        run: npx expo prebuild --platform android --non-interactive\n      - name: Build release APK\n        working-directory: android\n        run: ./gradlew assembleRelease --no-daemon\n      - name: Upload APK\n        uses: actions/upload-artifact@v4\n        with:\n          name: welding-workshop-crm-release\n          path: android/app/build/outputs/apk/release/app-release.apk\n
+name: Android Release Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: android-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install dependencies
+        run: npm install
+      - name: Generate native Android project
+        run: npx expo prebuild --platform android --non-interactive
+      - name: Build release APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: welding-workshop-crm-release
+          path: android/app/build/outputs/apk/release/app-release.apk
