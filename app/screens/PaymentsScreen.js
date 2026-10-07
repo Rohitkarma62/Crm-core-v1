@@ -3,7 +3,7 @@ import {useFocusEffect} from '@react-navigation/native';
 import {Alert,Image,SafeAreaView,ScrollView,StyleSheet,Text,View,Linking} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
-import RNHTMLtoPDF from 'react-native-html-to-pdf';
+import {generatePDF} from 'react-native-html-to-pdf';
 import {useCRMStore} from '../../store/useCRMStore';
 import Button from '../../components/Button';
 import Input from '../../components/Input';
@@ -61,10 +61,14 @@ export default function PaymentsScreen({route}){
     const businessName=company.name||'Welding Workshop';
     const owner=company.owner?`<p><b>Owner:</b> ${company.owner}</p>`:'';
     const html=`<html><body style="font-family:Arial;padding:24px">${logo}<h1>${businessName}</h1>${owner}<p><b>Invoice:</b> ${invoiceNo}</p><p><b>Date:</b> ${sale.date}</p><hr/><h2>${sale.customer_name}</h2><p>${sale.phone||''}</p><table style="width:100%;border-collapse:collapse"><tr><td>Sale Amount</td><td>₹${Number(sale.amount).toFixed(2)}</td></tr><tr><td>Paid</td><td>₹${Number(sale.paid_amount).toFixed(2)}</td></tr><tr><td>Pending</td><td>₹${Number(sale.pending_amount).toFixed(2)}</td></tr></table><p><b>Terms:</b> ${terms}</p>${signature}</body></html>`;
-    const result=await RNHTMLtoPDF.convert({html,fileName:invoiceNo,directory:'Documents'});
+    const result=await generatePDF({html,fileName:invoiceNo});
     if(!result?.filePath)throw new Error('PDF file was not created.');
-    await saveInvoice({saleId,invoiceNo,pdfPath:result.filePath});
-    Alert.alert('Invoice created',result.filePath);
+    const invoiceDir=FileSystem.documentDirectory+'invoices/';
+    await FileSystem.makeDirectoryAsync(invoiceDir,{intermediates:true});
+    const target=invoiceDir+invoiceNo+'.pdf';
+    await FileSystem.copyAsync({from:result.filePath,to:target});
+    await saveInvoice({saleId,invoiceNo,pdfPath:target});
+    Alert.alert('Invoice created','PDF saved successfully.');
    }catch(e){Alert.alert('Invoice error',e.message)}finally{setBusy(false)}
  };
 
