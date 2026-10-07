@@ -14,9 +14,9 @@ export default function LeadsScreen({navigation}){
  useEffect(()=>{loadLeads()},[]);
  const filtered=useMemo(()=>leads.filter(x=>(x.name+' '+x.phone+' '+x.source).toLowerCase().includes(query.toLowerCase())),[leads,query]);
  const edit=(lead)=>{setForm({...lead});setModal(true)};
- const save=async()=>{if(!form.name.trim()||!form.phone.trim()){Alert.alert('Required','Name aur phone required hai.');return}await saveLead(form);setForm(empty);setModal(false)};
+ const save=async()=>{if(!form.name.trim()||!form.phone.trim()){Alert.alert('Required','Name aur phone required hai.');return}try{await saveLead(form);setForm(empty);setModal(false)}catch(e){Alert.alert('Lead error',e.message)}};
  const remove=(id)=>Alert.alert('Delete lead?','Ye lead permanently delete ho jayegi.',[{text:'Cancel'},{text:'Delete',style:'destructive',onPress:()=>deleteLead(id)}]);
- const convert=(id)=>Alert.alert('Convert to customer?','Lead ko customer mein convert karna hai?',[{text:'Cancel'},{text:'Convert',onPress:async()=>{const customerId=await convertLead(id);navigation.navigate('Customers',{customerId})}}]);
+ const convert=(id)=>Alert.alert('Convert to customer?','Lead ko customer mein convert karna hai?',[{text:'Cancel'},{text:'Convert',onPress:async()=>{try{const customerId=await convertLead(id);navigation.navigate('Customers',{customerId})}catch(e){Alert.alert('Convert error',e.message)}}}]);
  return <SafeAreaView style={styles.safe}>
   <View style={styles.header}><Text style={styles.title}>Leads</Text><Button title="+ Add Lead" onPress={()=>{setForm(empty);setModal(true)}}/></View>
   <Input placeholder="Search name, phone, source..." value={query} onChangeText={setQuery}/>
