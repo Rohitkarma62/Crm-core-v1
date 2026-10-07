@@ -3,7 +3,7 @@
   "version":"1.0.0",
   "private":true,
   "main":"node_modules/expo/AppEntry.js",
-  "scripts":{"start":"expo start","android":"expo run:android","ios":"expo run:ios","web":"expo start --web"},
+  "scripts":{"start":"expo start","android":"expo run:android","ios":"expo run:ios","web":"expo start --web","lint":"eslint App.js app components store theme"},
   "dependencies":{
     "@react-navigation/bottom-tabs":"^7.0.0",
     "@react-navigation/native":"^7.0.0",
@@ -17,5 +17,6 @@
     "react-native-html-to-pdf":"^1.3.0",
     "react-native-screens":"4.16.0",
     "zustand":"^5.0.0"
-  }
+  },
+  "devDependencies":{"@eslint/js":"^9.0.0","eslint":"^9.0.0"}
 }
