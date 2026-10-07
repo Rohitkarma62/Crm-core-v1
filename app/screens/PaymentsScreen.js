@@ -88,11 +88,11 @@ export default function PaymentsScreen({route}){
 }
 
 const styles=StyleSheet.create({
- safe:{flex:1,backgroundColor:'#ffffff',padding:12},
+ safe:{flex:1,backgroundColor:'#000000',padding:12},
  line:{marginTop:6},
  label:{fontWeight:'700',marginBottom:7},
  row:{flexDirection:'row',flexWrap:'wrap',gap:6},
  image:{width:'100%',height:180,marginTop:8,borderRadius:10},
- history:{paddingVertical:9,borderBottomWidth:1,borderBottomColor:'#dddddd'},
- muted:{color:'#555555',fontSize:12,marginTop:3}
+ history:{paddingVertical:9,borderBottomWidth:1,borderBottomColor:'#444444'},
+ muted:{color:'#cccccc',fontSize:12,marginTop:3}
 });
