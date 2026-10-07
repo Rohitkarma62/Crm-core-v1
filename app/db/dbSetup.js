@@ -7,6 +7,13 @@ export const getDatabase=()=>{
   return databasePromise;
 };
 
+async function addColumnIfMissing(db,table,column,definition){
+  try{await db.execAsync(\`ALTER TABLE \${table} ADD COLUMN \${column} \${definition}\`)}catch(e){
+    const message=String(e?.message||e);
+    if(!/duplicate column|already exists/i.test(message)) throw e;
+  }
+}
+
 export async function initDatabase(){
   const db=await getDatabase();
   await db.execAsync(`
@@ -86,6 +93,10 @@ export async function initDatabase(){
     CREATE INDEX IF NOT EXISTS idx_invoices_sale ON invoices(sale_id);
     CREATE INDEX IF NOT EXISTS idx_invoices_date ON invoices(date);
   `);
+  await addColumnIfMissing(db,'sales','work_description',"TEXT NOT NULL DEFAULT ''");
+  await addColumnIfMissing(db,'sales','original_amount',"REAL NOT NULL DEFAULT 0");
+  await addColumnIfMissing(db,'sales','discount_amount',"REAL NOT NULL DEFAULT 0");
+  await db.runAsync("UPDATE sales SET original_amount=amount WHERE original_amount=0 AND discount_amount=0");
   return db;
 }
 
