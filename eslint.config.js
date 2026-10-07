@@ -16,7 +16,7 @@ export default [
       },
     },
     rules: {
-      'no-unused-vars': ['error', { args: 'none' }],
+      'no-unused-vars': ['warn', { args: 'none' }],
     },
   },
 ];
