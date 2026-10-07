@@ -135,7 +135,7 @@ export const useCRMStore=create((set,get)=>({
     ]);
     if(!customer) throw new Error('Customer not found');
     const list=sales||[],totalJobs=list.length,totalSpent=list.reduce((a,x)=>a+Number(x.amount||0),0),totalDiscount=list.reduce((a,x)=>a+Number(x.discount_amount||0),0);
-    return {customer,sales:list,payments:payments||[],invoices:invoices||[],stats:{totalJobs,totalSpent,totalDiscount,averageJob:totalJobs?totalSpent/totalJobs:0,lastJobDate:list[0]?.date||null}};
+    return {customer,sales:list,payments:payments||[],invoices:invoices||[],stats:{totalJobs,totalSpent,totalDiscount,averageJob:totalJobs?totalSpent/totalJobs:0,discountRate:(totalSpent+totalDiscount)>0?(totalDiscount/(totalSpent+totalDiscount))*100:0,lastJobDate:list[0]?.date||null}};
   },
   loadCustomerHistory:async(customerId)=>{
     if(!customerId) throw new Error('Customer not found');
