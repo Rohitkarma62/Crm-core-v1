@@ -79,8 +79,10 @@ export default function PaymentsScreen({route}){
     const invoiceDir=FileSystem.documentDirectory+'invoices/';
     await FileSystem.makeDirectoryAsync(invoiceDir,{intermediates:true});
     const target=invoiceDir+invoiceNo+'.pdf';
+    const existing=await FileSystem.getInfoAsync(target);
+    if(existing.exists)await FileSystem.deleteAsync(target,{idempotent:true});
     await FileSystem.copyAsync({from:result.filePath,to:target});
-    await saveInvoice({saleId,invoiceNo,pdfPath:target});
+    await saveInvoice({saleId,invoiceNo,pdfPath:target,date:new Date().toISOString()});
     Alert.alert('Invoice created','PDF saved successfully.');
    }catch(e){Alert.alert('Invoice error',e.message)}finally{setBusy(false)}
  };
