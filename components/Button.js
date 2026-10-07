@@ -9,10 +9,10 @@ export default function Button({title,onPress,disabled=false,loading=false,varia
 }
 const styles=StyleSheet.create({
  base:{minHeight:48,borderRadius:10,paddingHorizontal:18,alignItems:'center',justifyContent:'center',marginVertical:5},
- primary:{backgroundColor:'#ffffff'},
+ primary:{backgroundColor:'#000000',borderWidth:1,borderColor:'#ffffff'},
  secondary:{backgroundColor:'#000000',borderWidth:1,borderColor:'#ffffff'},
- danger:{backgroundColor:'#ffffff'},
- text:{fontSize:16,fontWeight:'700',color:'#000000'},
+ danger:{backgroundColor:'#000000',borderWidth:1,borderColor:'#ffffff'},
+ text:{fontSize:16,fontWeight:'700',color:'#ffffff'},
  secondaryText:{color:'#ffffff'},
  pressed:{opacity:.8},
  disabled:{opacity:.5}
