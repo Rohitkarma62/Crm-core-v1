@@ -205,7 +205,7 @@ export const useCRMStore=create((set,get)=>({
     const db=await getDatabase();
     const payment=await db.getFirstAsync('SELECT sale_id,customer_id FROM payments WHERE id=?',[id]);
     if(!payment) throw new Error('Payment not found');
-    await db.withTransactionAsync(async()=>{
+    await db.withExclusiveTransactionAsync(async()=>{
       await db.runAsync('DELETE FROM payments WHERE id=?',[id]);
       const sale=await db.getFirstAsync('SELECT amount FROM sales WHERE id=?',[payment.sale_id]);
       if(sale){
