@@ -141,7 +141,7 @@ export const useCRMStore=create((set,get)=>({
       await txn.runAsync('UPDATE customers SET total_paid=COALESCE((SELECT SUM(amount) FROM payments WHERE customer_id=?),0),pending_amount=COALESCE((SELECT SUM(pending_amount) FROM sales WHERE customer_id=?),0) WHERE id=?',
         [customerId,customerId,customerId]);
     });
-    await get().loadSales(); await get().loadCustomers(); await get().refreshDashboard(); await get().loadPayments(saleId);
+    await refreshAfterMutation(()=>get().loadSales(),()=>get().loadCustomers(),()=>get().refreshDashboard(),()=>get().loadPayments(saleId));
   },'Payment could not be saved'),
   saveInvoice:async({saleId,invoiceNo,pdfPath,date})=>runAction(async()=>{
     if(!saleId||!invoiceNo) throw new Error('Sale and invoice number are required');
