@@ -15,7 +15,7 @@ export function normalizePhone(value){
 
 export function validatePhone(value){
   const phone=normalizePhone(value);
-  if(phone.length<10) throw new Error('Valid phone number required');
+  if(phone.length!==10) throw new Error('Valid 10-digit phone number required');
   return phone;
 }
 
