@@ -14,14 +14,14 @@ export default function LeadsScreen({navigation}){
  useEffect(()=>{loadLeads()},[]);
  const filtered=useMemo(()=>leads.filter(x=>(x.name+' '+x.phone+' '+x.source).toLowerCase().includes(query.toLowerCase())),[leads,query]);
  const edit=(lead)=>{setForm({...lead});setModal(true)};
- const save=async()=>{if(!form.name.trim()||!form.phone.trim()){Alert.alert('Required','Name aur phone required hai.');return}await saveLead(form);setForm(empty);setModal(false)};
+ const save=async()=>{if(!form.name.trim()||!form.phone.trim()){Alert.alert('Required','Name aur phone required hai.');return}try{await saveLead(form);setForm(empty);setModal(false)}catch(e){Alert.alert('Lead error',e.message)}};
  const remove=(id)=>Alert.alert('Delete lead?','Ye lead permanently delete ho jayegi.',[{text:'Cancel'},{text:'Delete',style:'destructive',onPress:()=>deleteLead(id)}]);
- const convert=(id)=>Alert.alert('Convert to customer?','Lead ko customer mein convert karna hai?',[{text:'Cancel'},{text:'Convert',onPress:async()=>{const customerId=await convertLead(id);navigation.navigate('Customers',{customerId})}}]);
+ const convert=(id)=>Alert.alert('Convert to customer?','Lead ko customer mein convert karna hai?',[{text:'Cancel'},{text:'Convert',onPress:async()=>{try{const customerId=await convertLead(id);navigation.navigate('Sales',{customerId})}catch(e){Alert.alert('Convert error',e.message)}}}]);
  return <SafeAreaView style={styles.safe}>
   <View style={styles.header}><Text style={styles.title}>Leads</Text><Button title="+ Add Lead" onPress={()=>{setForm(empty);setModal(true)}}/></View>
   <Input placeholder="Search name, phone, source..." value={query} onChangeText={setQuery}/>
   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.stageBar}>{STAGES.map(s=><View key={s} style={styles.stagePill}><Text style={styles.stageText}>{s}: {leads.filter(x=>x.stages===s).length}</Text></View>)}</ScrollView>
-  <FlatList data={filtered} keyExtractor={x=>String(x.id)} renderItem={({item})=><Card title={item.name} subtitle={item.phone}>
+  <FlatList data={filtered} keyExtractor={x=>String(x.id)} renderItem={({item})=>(<Card title={item.name} subtitle={item.phone}>
     <Text style={styles.meta}>{item.source||'No source'} • {item.stages}</Text>
     {!!item.details&&<Text style={styles.details}>{item.details}</Text>}
     {!!item.follow_up_date&&<Text style={styles.meta}>Follow-up: {item.follow_up_date}</Text>}
@@ -40,4 +40,4 @@ export default function LeadsScreen({navigation}){
   </ScrollView></SafeAreaView></Modal>
  </SafeAreaView>
 }
-const styles=StyleSheet.create({safe:{flex:1,backgroundColor:'#f5f7fb',padding:12},header:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},title:{fontSize:25,fontWeight:'800',color:'#17202a'},stageBar:{maxHeight:42,marginBottom:8},stagePill:{padding:10,borderRadius:20,backgroundColor:'#e9eef5',marginRight:6},stageText:{fontWeight:'700'},meta:{color:'#64748b',marginTop:5},details:{marginTop:7,color:'#243447'},row:{flexDirection:'row',flexWrap:'wrap',gap:6,marginTop:8},mini:{borderWidth:1,borderColor:'#ccd3dd',paddingHorizontal:8,paddingVertical:6,borderRadius:8},active:{backgroundColor:'#1f6feb',borderColor:'#1f6feb'},miniText:{fontSize:11},activeText:{fontSize:11,color:'#fff',fontWeight:'700'},empty:{textAlign:'center',marginTop:30,color:'#64748b'},form:{padding:16},label:{fontWeight:'700',marginBottom:6,color:'#243447'},wrap:{flexDirection:'row',flexWrap:'wrap',gap:7,marginBottom:14},option:{borderWidth:1,borderColor:'#ccd3dd',padding:10,borderRadius:8},selected:{backgroundColor:'#dbeafe',borderColor:'#1f6feb'}});
+const styles=StyleSheet.create({safe:{flex:1,backgroundColor:'#ffffff',padding:12},header:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},title:{fontSize:25,fontWeight:'800',color:'#111111'},stageBar:{maxHeight:42,marginBottom:8},stagePill:{padding:10,borderRadius:20,backgroundColor:'#ffffff',marginRight:6},stageText:{fontWeight:'700'},meta:{color:'#555555',marginTop:5},details:{marginTop:7,color:'#111111'},row:{flexDirection:'row',flexWrap:'wrap',gap:6,marginTop:8},mini:{borderWidth:1,borderColor:'#111111',paddingHorizontal:8,paddingVertical:6,borderRadius:8},active:{backgroundColor:'#111111',borderColor:'#111111'},miniText:{fontSize:11},activeText:{fontSize:11,color:'#ffffff',fontWeight:'700'},empty:{textAlign:'center',marginTop:30,color:'#555555'},form:{padding:16},label:{fontWeight:'700',marginBottom:6,color:'#111111'},wrap:{flexDirection:'row',flexWrap:'wrap',gap:7,marginBottom:14},option:{borderWidth:1,borderColor:'#111111',padding:10,borderRadius:8},selected:{backgroundColor:'#eeeeee',borderColor:'#111111'}});
