@@ -7,13 +7,15 @@ export function requiredText(value,label){
 }
 
 export function normalizePhone(value){
-  return cleanString(value).replace(/[^0-9+]/g,'');
+  const digits=cleanString(value).replace(/\D/g,'');
+  if(digits.length===10) return digits;
+  if(digits.length===12&&digits.startsWith('91')) return digits.slice(2);
+  return digits;
 }
 
 export function validatePhone(value){
   const phone=normalizePhone(value);
-  const digits=phone.replace(/\D/g,'');
-  if(digits.length<10) throw new Error('Valid phone number required');
+  if(phone.length<10) throw new Error('Valid phone number required');
   return phone;
 }
 
@@ -33,6 +35,15 @@ export function normalizeDate(value){
   const date=value?new Date(value):new Date();
   if(Number.isNaN(date.getTime())) throw new Error('Invalid date');
   return date.toISOString();
+}
+
+export function escapeHtml(value){
+  return cleanString(value)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
 }
 
 export function normalizeError(error,fallback='Something went wrong'){
