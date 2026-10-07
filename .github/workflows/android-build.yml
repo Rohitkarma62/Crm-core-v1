@@ -28,6 +28,8 @@ jobs:
           java-version: '17'
       - name: Install dependencies
         run: npm install
+      - name: Static JavaScript validation
+        run: npm run lint
       - name: Validate Expo dependency compatibility
         run: npx expo install --check
       - name: Generate native Android project
