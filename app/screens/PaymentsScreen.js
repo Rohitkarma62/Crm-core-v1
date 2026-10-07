@@ -1,4 +1,4 @@
-import React,{useEffect,useState} from 'react';
+import React,{useState} from 'react';
 import {useFocusEffect} from '@react-navigation/native';
 import {Alert,Image,SafeAreaView,ScrollView,StyleSheet,Text,View,Linking} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
