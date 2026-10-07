@@ -24,7 +24,9 @@ export default function SalesScreen({navigation,route}){
   <Modal visible={modal} animationType="slide" onRequestClose={()=>setModal(false)}><SafeAreaView style={styles.safe}><ScrollView contentContainerStyle={styles.form}>
    <Text style={styles.title}>New Sale</Text><Text style={styles.label}>Customer</Text>
    {customers.map(c=><Pressable key={c.id} onPress={()=>setCustomerId(c.id)} style={[styles.customer,customerId===c.id&&styles.selected]}><Text style={styles.bold}>{c.name}</Text><Text>{c.phone}</Text></Pressable>)}
-   <Input label="Total Work Amount" value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="Example: 25000"/>\n   <Input label="Work / Job Description" value={workDescription} onChangeText={setWorkDescription} placeholder="Example: Gate welding + grill repair"/>\n   <Input label="Customer Discount" value={discount} onChangeText={setDiscount} keyboardType="decimal-pad" placeholder="Discount amount, optional"/>
+   <Input label="Total Work Amount" value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="Example: 25000"/>
+   <Input label="Work / Job Description" value={workDescription} onChangeText={setWorkDescription} placeholder="Example: Gate welding + grill repair"/>
+   <Input label="Customer Discount" value={discount} onChangeText={setDiscount} keyboardType="decimal-pad" placeholder="Discount amount, optional"/>
    <Button title="Create Sale" loading={busy} onPress={save}/><Button title="Cancel" variant="secondary" onPress={()=>setModal(false)}/>
   </ScrollView></SafeAreaView></Modal>
  </SafeAreaView>
