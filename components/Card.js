@@ -1,5 +1,6 @@
 import React from 'react';
-import {View,Text,StyleSheet} from 'react-native';
+import {Text,View,StyleSheet} from 'react-native';
+import {colors,radius,spacing,typography} from '../theme';
 
 export default function Card({title,value,subtitle,children}){
  return <View style={styles.card}>
@@ -10,6 +11,8 @@ export default function Card({title,value,subtitle,children}){
  </View>;
 }
 const styles=StyleSheet.create({
- card:{backgroundColor:'#000000',borderRadius:14,padding:16,marginBottom:12,elevation:2,shadowColor:'#000',shadowOpacity:.08,shadowRadius:5},
- title:{fontSize:14,fontWeight:'700',color:'#ffffff'},value:{fontSize:25,fontWeight:'800',color:'#ffffff',marginTop:4},subtitle:{fontSize:12,color:'#ffffff',marginTop:3}
+ card:{backgroundColor:colors.surface,borderWidth:1,borderColor:colors.border,borderRadius:radius.lg,padding:spacing.lg,marginBottom:spacing.md},
+ title:{...typography.bodyStrong,color:colors.text},
+ value:{fontSize:25,fontWeight:'800',color:colors.text,marginTop:5},
+ subtitle:{...typography.caption,color:colors.muted,marginTop:3}
 });
