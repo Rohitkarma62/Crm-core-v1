@@ -60,7 +60,7 @@ export const useCRMStore=create((set,get)=>({
     const rows=await db.getAllAsync(`SELECT c.*,COUNT(s.id) sale_count,COALESCE(SUM(s.amount),0) total_sales
       FROM customers c LEFT JOIN sales s ON s.customer_id=c.id GROUP BY c.id ORDER BY c.id DESC`);
     set({customers:rows||[]}); return rows||[];
-  }
+  },
   loadSales:async()=>{
     const db=await getDatabase();
     const rows=await db.getAllAsync(`SELECT s.*,c.name customer_name,c.phone FROM sales s JOIN customers c ON c.id=s.customer_id ORDER BY s.date DESC,s.id DESC`);
@@ -98,7 +98,7 @@ export const useCRMStore=create((set,get)=>({
   saveInvoice:async({saleId,invoiceNo,pdfPath,date})=>{
     const db=await getDatabase();
     await db.runAsync('INSERT OR REPLACE INTO invoices(sale_id,invoice_no,pdf_path,date) VALUES(?,?,?,?)',[saleId,invoiceNo,pdfPath||null,date||new Date().toISOString()]);
-  }
+  },
   loadReports:async()=>{
     const db=await getDatabase();
     const [summary,methods,monthly]=await Promise.all([
