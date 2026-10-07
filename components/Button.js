@@ -8,6 +8,6 @@ export default function Button({title,onPress,disabled=false,loading=false,varia
 }
 const styles=StyleSheet.create({
  base:{minHeight:48,borderRadius:10,paddingHorizontal:18,alignItems:'center',justifyContent:'center',marginVertical:5},
- primary:{backgroundColor:'#1f6feb'},secondary:{backgroundColor:'#e9eef5'},danger:{backgroundColor:'#c62828'},
+ primary:{backgroundColor:'#111111'},secondary:{backgroundColor:'#ffffff'},danger:{backgroundColor:'#111111'},
  text:{fontSize:16,fontWeight:'700',color:'#fff'},pressed:{opacity:.8},disabled:{opacity:.5}
 });
