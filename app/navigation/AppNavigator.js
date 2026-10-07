@@ -5,15 +5,16 @@ import LeadsScreen from '../screens/LeadsScreen';
 import CustomersScreen from '../screens/CustomersScreen';
 import SalesScreen from '../screens/SalesScreen';
 import PaymentsScreen from '../screens/PaymentsScreen';
+import ReportsScreen from '../screens/ReportsScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 
 const Stack=createNativeStackNavigator();
-
-export default function AppNavigator(){
- return <Stack.Navigator>
-   <Stack.Screen name="Dashboard" component={DashboardScreen}/>
-   <Stack.Screen name="Leads" component={LeadsScreen}/>
-   <Stack.Screen name="Customers" component={CustomersScreen}/>
-   <Stack.Screen name="Sales" component={SalesScreen}/>
-   <Stack.Screen name="Payments" component={PaymentsScreen}/>
- </Stack.Navigator>;
-}
+export default function AppNavigator(){return <Stack.Navigator>
+<Stack.Screen name="Dashboard" component={DashboardScreen}/>
+<Stack.Screen name="Leads" component={LeadsScreen}/>
+<Stack.Screen name="Customers" component={CustomersScreen}/>
+<Stack.Screen name="Sales" component={SalesScreen}/>
+<Stack.Screen name="Payments" component={PaymentsScreen}/>
+<Stack.Screen name="Reports" component={ReportsScreen}/>
+<Stack.Screen name="Settings" component={SettingsScreen}/>
+</Stack.Navigator>}
