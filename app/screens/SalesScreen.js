@@ -7,8 +7,10 @@ import Card from '../../components/Card';
 
 export default function SalesScreen({navigation,route}){
  const {customers,loadCustomers,sales,loadSales,createSale}=useCRMStore();
- const [modal,setModal]=useState(false),[customerId,setCustomerId]=useState(null),[amount,setAmount]=useState(''),[busy,setBusy]=useState(false);\n const presetCustomerId=route?.params?.customerId;
- useEffect(()=>{loadCustomers();loadSales()},[]);\n useEffect(()=>{if(presetCustomerId){setCustomerId(Number(presetCustomerId));setModal(true)}},[presetCustomerId]);
+ const [modal,setModal]=useState(false),[customerId,setCustomerId]=useState(null),[amount,setAmount]=useState(''),[busy,setBusy]=useState(false);
+ const presetCustomerId=route?.params?.customerId;
+ useEffect(()=>{loadCustomers();loadSales()},[]);
+ useEffect(()=>{if(presetCustomerId){setCustomerId(Number(presetCustomerId));setModal(true)}},[presetCustomerId]);
  const save=async()=>{if(busy)return;try{setBusy(true);const id=await createSale({customerId,amount});setModal(false);setAmount('');setCustomerId(null);navigation.navigate('Payments',{saleId:id})}catch(e){Alert.alert('Sale error',e.message)}finally{setBusy(false)}};
  return <SafeAreaView style={styles.safe}>
   <View style={styles.header}><Text style={styles.title}>Sales</Text><Button title="+ New Sale" onPress={()=>setModal(true)}/></View>
