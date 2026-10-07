@@ -7,9 +7,9 @@ import Card from '../../components/Card';
 
 export default function SalesScreen({navigation}){
  const {customers,loadCustomers,sales,loadSales,createSale}=useCRMStore();
- const [modal,setModal]=useState(false),[customerId,setCustomerId]=useState(null),[amount,setAmount]=useState('');
+ const [modal,setModal]=useState(false),[customerId,setCustomerId]=useState(null),[amount,setAmount]=useState(''),[busy,setBusy]=useState(false);
  useEffect(()=>{loadCustomers();loadSales()},[]);
- const save=async()=>{try{const id=await createSale({customerId,amount});setModal(false);setAmount('');setCustomerId(null);navigation.navigate('Payments',{saleId:id})}catch(e){Alert.alert('Sale error',e.message)}};
+ const save=async()=>{if(busy)return;try{setBusy(true);const id=await createSale({customerId,amount});setModal(false);setAmount('');setCustomerId(null);navigation.navigate('Payments',{saleId:id})}catch(e){Alert.alert('Sale error',e.message)}finally{setBusy(false)}};
  return <SafeAreaView style={styles.safe}>
   <View style={styles.header}><Text style={styles.title}>Sales</Text><Button title="+ New Sale" onPress={()=>setModal(true)}/></View>
   <FlatList data={sales} keyExtractor={x=>String(x.id)} renderItem={({item})=><Card title={item.customer_name} subtitle={item.phone}>
@@ -22,7 +22,7 @@ export default function SalesScreen({navigation}){
    <Text style={styles.title}>New Sale</Text><Text style={styles.label}>Customer</Text>
    {customers.map(c=><Pressable key={c.id} onPress={()=>setCustomerId(c.id)} style={[styles.customer,customerId===c.id&&styles.selected]}><Text style={styles.bold}>{c.name}</Text><Text>{c.phone}</Text></Pressable>)}
    <Input label="Amount" value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="Sale amount"/>
-   <Button title="Create Sale" onPress={save}/><Button title="Cancel" variant="secondary" onPress={()=>setModal(false)}/>
+   <Button title="Create Sale" loading={busy} onPress={save}/><Button title="Cancel" variant="secondary" onPress={()=>setModal(false)}/>
   </ScrollView></SafeAreaView></Modal>
  </SafeAreaView>
 }
