@@ -34,7 +34,9 @@ export default function PaymentsScreen({route}){
  const whatsapp=async()=>{
   if(!sale?.phone){Alert.alert('WhatsApp','Customer phone number unavailable.');return}
   const text=encodeURIComponent(`Hello ${sale.customer_name}, your welding workshop invoice is ₹${Number(sale.amount).toFixed(2)}. Paid ₹${Number(sale.paid_amount).toFixed(2)}, pending ₹${Number(sale.pending_amount).toFixed(2)}.`);
-  const digits=String(sale.phone).replace(/\D/g,'');\n  const phone=digits.length===10?'91'+digits:digits;\n  const url='whatsapp://send?phone='+encodeURIComponent(phone)+'&text='+text;
+  const digits=String(sale.phone).replace(/\D/g,'');
+  const phone=digits.length===10?'91'+digits:digits;
+  const url='whatsapp://send?phone='+encodeURIComponent(phone)+'&text='+text;
   const supported=await Linking.canOpenURL(url);
   if(!supported){Alert.alert('WhatsApp not available','WhatsApp app is not installed or cannot handle this link.');return}
   await Linking.openURL(url);
@@ -44,7 +46,13 @@ export default function PaymentsScreen({route}){
    try{
     setBusy(true);
     const invoiceNo='INV-'+String(sale.id).padStart(5,'0');
-    const company=companySettings||{};\n    const logo=company.logo_uri?`<img src="${company.logo_uri}" style="max-width:180px;max-height:90px"/>`:'';\n    const signature=company.signature_uri?`<div style="margin-top:28px"><img src="${company.signature_uri}" style="max-width:180px;max-height:80px"/><div>Authorized Signature</div></div>`:'';\n    const terms=company.terms||'Thank you for your business.';\n    const businessName=company.name||'Welding Workshop';\n    const owner=company.owner?`<p><b>Owner:</b> ${company.owner}</p>`:'';\n    const html=`<html><body style="font-family:Arial;padding:24px">${logo}<h1>${businessName}</h1>${owner}<p><b>Invoice:</b> ${invoiceNo}</p><p><b>Date:</b> ${sale.date}</p><hr/><h2>${sale.customer_name}</h2><p>${sale.phone||''}</p><table style="width:100%;border-collapse:collapse"><tr><td>Sale Amount</td><td>₹${Number(sale.amount).toFixed(2)}</td></tr><tr><td>Paid</td><td>₹${Number(sale.paid_amount).toFixed(2)}</td></tr><tr><td>Pending</td><td>₹${Number(sale.pending_amount).toFixed(2)}</td></tr></table><p><b>Terms:</b> ${terms}</p>${signature}</body></html>`;
+    const company=companySettings||{};
+    const logo=company.logo_uri?`<img src="${company.logo_uri}" style="max-width:180px;max-height:90px"/>`:'';
+    const signature=company.signature_uri?`<div style="margin-top:28px"><img src="${company.signature_uri}" style="max-width:180px;max-height:80px"/><div>Authorized Signature</div></div>`:'';
+    const terms=company.terms||'Thank you for your business.';
+    const businessName=company.name||'Welding Workshop';
+    const owner=company.owner?`<p><b>Owner:</b> ${company.owner}</p>`:'';
+    const html=`<html><body style="font-family:Arial;padding:24px">${logo}<h1>${businessName}</h1>${owner}<p><b>Invoice:</b> ${invoiceNo}</p><p><b>Date:</b> ${sale.date}</p><hr/><h2>${sale.customer_name}</h2><p>${sale.phone||''}</p><table style="width:100%;border-collapse:collapse"><tr><td>Sale Amount</td><td>₹${Number(sale.amount).toFixed(2)}</td></tr><tr><td>Paid</td><td>₹${Number(sale.paid_amount).toFixed(2)}</td></tr><tr><td>Pending</td><td>₹${Number(sale.pending_amount).toFixed(2)}</td></tr></table><p><b>Terms:</b> ${terms}</p>${signature}</body></html>`;
     const result=await RNHTMLtoPDF.convert({html,fileName:invoiceNo,directory:'Documents'});
     await saveInvoice({saleId,invoiceNo,pdfPath:result.filePath});
     Alert.alert('Invoice created',result.filePath||'PDF saved locally');
