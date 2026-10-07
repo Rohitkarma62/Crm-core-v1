@@ -16,7 +16,7 @@ export default function PaymentsScreen({route}){
  const sale=sales.find(x=>Number(x.id)===Number(saleId));
  const [amount,setAmount]=useState(''),[method,setMethod]=useState('Cash'),[screenshot,setScreenshot]=useState(null),[busy,setBusy]=useState(false);
  useEffect(()=>{loadSales();loadCompanySettings();if(saleId)loadPayments(saleId)},[saleId]);
- const pickScreenshot=async()=>{
+ const pickScreenshot=async()=>{\n   try{
    const permission=await ImagePicker.requestMediaLibraryPermissionsAsync();
    if(!permission.granted){Alert.alert('Permission required','Gallery permission is required for the UPI/payment screenshot.');return}
    const result=await ImagePicker.launchImageLibraryAsync({mediaTypes:['images'],quality:.8});
