@@ -4,7 +4,7 @@ import {useCRMStore} from '../../store/useCRMStore';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 
-export default function CustomersScreen(){
+export default function CustomersScreen({navigation}){
  const {customers,loadCustomers,loadCustomerHistory,deleteCustomer}=useCRMStore();
  const [history,setHistory]=useState(null),[busy,setBusy]=useState(false);
  useEffect(()=>{loadCustomers().catch(()=>{})},[]);
@@ -21,7 +21,7 @@ export default function CustomersScreen(){
   <View style={s.header}><Text style={s.title}>Customers</Text><Button title="Refresh" variant="secondary" onPress={()=>loadCustomers()}/></View>
   <FlatList data={customers} keyExtractor={x=>String(x.id)} renderItem={({item})=><Card title={item.name} subtitle={item.phone}>
    <View style={s.grid}><Text>Total Sales: ₹{Number(item.total_sales||0).toFixed(2)}</Text><Text>Paid: ₹{Number(item.total_paid||0).toFixed(2)}</Text><Text>Pending: ₹{Number(item.pending_amount||0).toFixed(2)}</Text><Text>Sales: {item.sale_count||0}</Text></View>
-   <View style={s.row}><Button title="History" variant="secondary" onPress={()=>openHistory(item)}/><Button title="Delete" variant="danger" loading={busy} onPress={()=>remove(item)}/></View>
+   <View style={s.row}><Button title="New Sale" onPress={()=>navigation.navigate("Sales",{customerId:item.id})}/><Button title="History" variant="secondary" onPress={()=>openHistory(item)}/><Button title="Delete" variant="danger" loading={busy} onPress={()=>remove(item)}/></View>
   </Card>} ListEmptyComponent={<Text style={s.empty}>No customers yet. Convert a lead to create one.</Text>}/>
   <Modal visible={!!history} animationType="slide" onRequestClose={()=>setHistory(null)}>
    <SafeAreaView style={s.safe}><ScrollView contentContainerStyle={s.form}>
