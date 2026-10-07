@@ -62,7 +62,7 @@ export const useCRMStore=create((set,get)=>({
   },
   loadCustomers:async()=>{
     const db=await getDatabase();
-    const rows=await db.getAllAsync(`SELECT c.*,COUNT(s.id) sale_count,COALESCE(SUM(s.amount),0) total_sales
+    const rows=await db.getAllAsync(`SELECT c.*,COUNT(s.id) sale_count,COALESCE(SUM(s.amount),0) total_sales,COALESCE(SUM(s.discount_amount),0) total_discount,MAX(s.date) last_job_date
       FROM customers c LEFT JOIN sales s ON s.customer_id=c.id GROUP BY c.id ORDER BY c.id DESC`);
     set({customers:rows||[]}); return rows||[];
   },
@@ -76,11 +76,16 @@ export const useCRMStore=create((set,get)=>({
     const rows=await db.getAllAsync(`SELECT p.*,c.name customer_name FROM payments p JOIN customers c ON c.id=p.customer_id WHERE p.sale_id=? ORDER BY p.date DESC,p.id DESC`,[saleId]);
     set({payments:rows||[]}); return rows||[];
   },
-  createSale:async({customerId,amount,date})=>{
-    const value=Number(amount);
+  createSale:async({customerId,amount,date,workDescription,discountAmount})=>{
+    const value=Number(amount),discount=Number(discountAmount||0);
     if(!customerId||!Number.isFinite(value)||value<=0) throw new Error('Valid customer and sale amount required');
+    if(!Number.isFinite(discount)||discount<0||discount>value) throw new Error('Discount valid amount me hona chahiye');
     const db=await getDatabase();
-    const result=await db.runAsync('INSERT INTO sales(customer_id,amount,date,status,paid_amount,pending_amount) VALUES(?,?,?,?,?,?)',[customerId,value,date||new Date().toISOString(),'Pending',0,value]);
+    const customer=await db.getFirstAsync('SELECT id FROM customers WHERE id=?',[customerId]);
+    if(!customer) throw new Error('Customer not found');
+    const finalAmount=value-discount;
+    if(finalAmount<=0) throw new Error('Discount ke baad sale amount 0 nahi ho sakta');
+    const result=await db.runAsync('INSERT INTO sales(customer_id,amount,date,status,paid_amount,pending_amount,work_description,original_amount,discount_amount) VALUES(?,?,?,?,?,?,?,?,?)',[customerId,finalAmount,date||new Date().toISOString(),'Pending',0,finalAmount,workDescription?.trim()||'',value,discount]);
     await get().loadSales(); await get().loadCustomers(); await get().refreshDashboard();
     return result.lastInsertRowId;
   },
@@ -118,6 +123,19 @@ export const useCRMStore=create((set,get)=>({
     const normalized={sales_count:Number(summary?.sales_count||0),revenue:Number(summary?.revenue||0),collection:Number(summary?.collection||0),pending:Number(summary?.pending||0)};
     set({reportSummary:normalized,reportMethods:methods||[],reportMonthly:monthly||[]});
     return {summary:normalized,methods:methods||[],monthly:monthly||[]};
+  },
+  loadCustomerProfile:async(customerId)=>{
+    if(!customerId) throw new Error('Customer not found');
+    const db=await getDatabase();
+    const [customer,sales,payments,invoices]=await Promise.all([
+      db.getFirstAsync('SELECT * FROM customers WHERE id=?',[customerId]),
+      db.getAllAsync('SELECT * FROM sales WHERE customer_id=? ORDER BY date DESC,id DESC',[customerId]),
+      db.getAllAsync('SELECT * FROM payments WHERE customer_id=? ORDER BY date DESC,id DESC',[customerId]),
+      db.getAllAsync('SELECT i.* FROM invoices i JOIN sales s ON s.id=i.sale_id WHERE s.customer_id=? ORDER BY i.date DESC,i.id DESC',[customerId])
+    ]);
+    if(!customer) throw new Error('Customer not found');
+    const list=sales||[],totalJobs=list.length,totalSpent=list.reduce((a,x)=>a+Number(x.amount||0),0),totalDiscount=list.reduce((a,x)=>a+Number(x.discount_amount||0),0);
+    return {customer,sales:list,payments:payments||[],invoices:invoices||[],stats:{totalJobs,totalSpent,totalDiscount,averageJob:totalJobs?totalSpent/totalJobs:0,lastJobDate:list[0]?.date||null}};
   },
   loadCustomerHistory:async(customerId)=>{
     if(!customerId) throw new Error('Customer not found');
