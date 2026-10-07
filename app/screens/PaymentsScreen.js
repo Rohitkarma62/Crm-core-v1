@@ -60,7 +60,7 @@ export default function PaymentsScreen({route}){
     const terms=company.terms||'Thank you for your business.';
     const businessName=company.name||'Welding Workshop';
     const owner=company.owner?`<p><b>Owner:</b> ${company.owner}</p>`:'';
-    const html=`<html><body style="font-family:Arial;padding:24px">${logo}<h1>${businessName}</h1>${owner}<p><b>Invoice:</b> ${invoiceNo}</p><p><b>Date:</b> ${sale.date}</p><hr/><h2>${sale.customer_name}</h2><p>${sale.phone||''}</p><table style="width:100%;border-collapse:collapse"><tr><td>Sale Amount</td><td>₹${Number(sale.amount).toFixed(2)}</td></tr><tr><td>Paid</td><td>₹${Number(sale.paid_amount).toFixed(2)}</td></tr><tr><td>Pending</td><td>₹${Number(sale.pending_amount).toFixed(2)}</td></tr></table><p><b>Terms:</b> ${terms}</p>${signature}</body></html>`;
+    const html=`<html><body style="font-family:Arial;padding:24px">${logo}<h1>${businessName}</h1>${owner}<p><b>Invoice:</b> ${invoiceNo}</p><p><b>Date:</b> ${sale.date}</p><hr/><h2>${sale.customer_name}</h2><p>${sale.phone||''}</p><table style="width:100%;border-collapse:collapse"><tr><td>Work</td><td>${sale.work_description||'Welding work'}</td></tr><tr><td>Original Amount</td><td>₹${Number(sale.original_amount||sale.amount).toFixed(2)}</td></tr><tr><td>Discount</td><td>₹${Number(sale.discount_amount||0).toFixed(2)}</td></tr><tr><td>Final Sale Amount</td><td>₹${Number(sale.amount).toFixed(2)}</td></tr><tr><td>Paid</td><td>₹${Number(sale.paid_amount).toFixed(2)}</td></tr><tr><td>Pending</td><td>₹${Number(sale.pending_amount).toFixed(2)}</td></tr></table><p><b>Terms:</b> ${terms}</p>${signature}</body></html>`;
     const result=await generatePDF({html,fileName:invoiceNo});
     if(!result?.filePath)throw new Error('PDF file was not created.');
     const invoiceDir=FileSystem.documentDirectory+'invoices/';
@@ -74,7 +74,7 @@ export default function PaymentsScreen({route}){
 
  if(!sale)return <SafeAreaView style={styles.safe}><Text>Sale not found.</Text></SafeAreaView>;
  return <SafeAreaView style={styles.safe}><ScrollView>
-  <Card title={sale.customer_name} subtitle={sale.phone}><Text>Sale: ₹{Number(sale.amount).toFixed(2)}</Text><Text style={styles.line}>Paid: ₹{Number(sale.paid_amount).toFixed(2)}</Text><Text style={styles.line}>Pending: ₹{Number(sale.pending_amount).toFixed(2)}</Text></Card>
+  <Card title={sale.customer_name} subtitle={sale.phone}><Text>Work: {sale.work_description||'General welding work'}</Text><Text style={styles.line}>Original: ₹{Number(sale.original_amount||sale.amount).toFixed(2)} • Discount: ₹{Number(sale.discount_amount||0).toFixed(2)}</Text><Text style={styles.line}>Sale: ₹{Number(sale.amount).toFixed(2)}</Text><Text style={styles.line}>Paid: ₹{Number(sale.paid_amount).toFixed(2)}</Text><Text style={styles.line}>Pending: ₹{Number(sale.pending_amount).toFixed(2)}</Text></Card>
   <Card title="Add Payment">
    <Input label="Amount" value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="Payment amount"/>
    <Text style={styles.label}>Method</Text><View style={styles.row}>{METHODS.map(x=><Button key={x} title={x} variant={method===x?'primary':'secondary'} onPress={()=>setMethod(x)}/>)}</View>
