@@ -18,7 +18,7 @@ export default function LeadsScreen({navigation}){
  const filtered=useMemo(()=>leads.filter(x=>(x.name+' '+x.phone+' '+x.source).toLowerCase().includes(query.toLowerCase())),[leads,query]);
  const edit=(lead)=>{setForm({...lead});setModal(true)};
  const save=async()=>{if(!form.name.trim()||!form.phone.trim()){Alert.alert('Required','Name aur phone required hai.');return}try{await saveLead(form);setForm(empty);setModal(false)}catch(e){Alert.alert('Lead error',e.message)}};
- const remove=(id)=>Alert.alert('Delete lead?','Ye lead permanently delete ho jayegi.',[{text:'Cancel'},{text:'Delete',style:'destructive',onPress:()=>deleteLead(id)}]);
+ const remove=(id)=>Alert.alert('Delete lead?','Ye lead permanently delete ho jayegi.',[{text:'Cancel'},{text:'Delete',style:'destructive',onPress:async()=>{try{await deleteLead(id)}catch(e){Alert.alert('Delete error',e.message)}}}]);
  const convert=(id)=>Alert.alert('Convert to customer?','Lead ko customer mein convert karna hai?',[{text:'Cancel'},{text:'Convert',onPress:async()=>{try{const customerId=await convertLead(id);navigation.navigate('Sales',{customerId})}catch(e){Alert.alert('Convert error',e.message)}}}]);
  return <SafeAreaView style={styles.safe}>
   <View style={styles.header}><Text style={styles.title}>Leads</Text><Button title="+ Add Lead" onPress={()=>{setForm(empty);setModal(true)}}/></View>
@@ -28,7 +28,7 @@ export default function LeadsScreen({navigation}){
     <Text style={styles.meta}>{item.source||'No source'} • {item.stages}</Text>
     {!!item.details&&<Text style={styles.details}>{item.details}</Text>}
     {!!item.follow_up_date&&<Text style={styles.meta}>Follow-up: {item.follow_up_date}</Text>}
-    <View style={styles.row}>{STAGES.map(s=><Pressable key={s} onPress={()=>moveLead(item.id,s)} style={[styles.mini,s===item.stages&&styles.active]}><Text style={s===item.stages?styles.activeText:styles.miniText}>{s}</Text></Pressable>)}</View>
+    <View style={styles.row}>{STAGES.map(s=><Pressable key={s} onPress={async()=>{try{await moveLead(item.id,s)}catch(e){Alert.alert('Stage update error',e.message)}}} style={[styles.mini,s===item.stages&&styles.active]}><Text style={s===item.stages?styles.activeText:styles.miniText}>{s}</Text></Pressable>)}</View>
     <View style={styles.row}><Button title="Edit" variant="secondary" onPress={()=>edit(item)}/><Button title="Customer" onPress={()=>convert(item.id)}/><Button title="Delete" variant="danger" onPress={()=>remove(item.id)}/></View>
   </Card>)} ListEmptyComponent={<Text style={styles.empty}>No leads found.</Text>}/>
   <Modal visible={modal} animationType="slide" onRequestClose={()=>setModal(false)}><SafeAreaView style={styles.safe}><ScrollView contentContainerStyle={styles.form}>
