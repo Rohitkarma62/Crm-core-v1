@@ -1,5 +1,5 @@
 import React from 'react';
-import {StatusBar} from 'react-native';
+import {StatusBar,Text} from 'react-native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {colors} from '../../theme';
@@ -14,15 +14,17 @@ import MoreScreen from '../screens/MoreScreen';
 
 const Tabs=createBottomTabNavigator();
 const Stack=createNativeStackNavigator();
+const icons={Home:'⌂',Leads:'◉',Customers:'○',Sales:'₹',More:'⋯'};
 
 function MainTabs(){
-  return <Tabs.Navigator screenOptions={{
+  return <Tabs.Navigator screenOptions={({route})=>({
     headerShown:false,
-    tabBarStyle:{backgroundColor:colors.bg,borderTopColor:colors.border,height:64,paddingTop:7,paddingBottom:7},
+    tabBarStyle:{backgroundColor:colors.bg,borderTopColor:colors.border,height:66,paddingTop:6,paddingBottom:7},
     tabBarActiveTintColor:colors.text,
     tabBarInactiveTintColor:colors.soft,
-    tabBarLabelStyle:{fontSize:11,fontWeight:'700'}
-  }}>
+    tabBarLabelStyle:{fontSize:10,fontWeight:'700'},
+    tabBarIcon:({color})=><Text style={{fontSize:20,color}}>{icons[route.name]}</Text>
+  })}>
     <Tabs.Screen name="Home" component={DashboardScreen}/>
     <Tabs.Screen name="Leads" component={LeadsScreen}/>
     <Tabs.Screen name="Customers" component={CustomersScreen}/>
@@ -41,7 +43,7 @@ export default function AppNavigator(){
       contentStyle:{backgroundColor:colors.bg}
     }}>
       <Stack.Screen name="Main" component={MainTabs} options={{headerShown:false}}/>
-      <Stack.Screen name="Payments" component={PaymentsScreen}/>
+      <Stack.Screen name="Payments" component={PaymentsScreen} options={{title:'Payment'}}/>
       <Stack.Screen name="Reports" component={ReportsScreen}/>
       <Stack.Screen name="Settings" component={SettingsScreen}/>
     </Stack.Navigator>
