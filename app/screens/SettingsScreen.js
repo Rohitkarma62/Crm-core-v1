@@ -1,7 +1,7 @@
 import React,{useState}from'react';
 import {useFocusEffect}from'@react-navigation/native';
 import {Alert,Image,SafeAreaView,ScrollView,StyleSheet,Text}from'react-native';
-import*as ImagePicker from'expo-image-picker';import*as FileSystem from'expo-file-system';
+import*as ImagePicker from'expo-image-picker';import*as FileSystem from'expo-file-system/legacy';
 import{useCRMStore}from'../../store/useCRMStore';import Input from'../../components/Input';import Button from'../../components/Button';
 import{colors,spacing,typography}from'../../theme';
 
