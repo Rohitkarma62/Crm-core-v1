@@ -113,9 +113,11 @@ export const useCRMStore=create((set,get)=>({
     const [summary,methods,monthly]=await Promise.all([
       db.getFirstAsync(`SELECT COUNT(*) sales_count,COALESCE(SUM(amount),0) revenue,COALESCE(SUM(paid_amount),0) collection,COALESCE(SUM(pending_amount),0) pending FROM sales`),
       db.getAllAsync(`SELECT method,COUNT(*) count,COALESCE(SUM(amount),0) amount FROM payments GROUP BY method ORDER BY amount DESC`),
-      db.getAllAsync(`SELECT substr(date,1,7) month,COUNT(*) sales_count,COALESCE(SUM(amount),0) revenue,COALESCE(SUM(paid_amount),0) collection FROM sales GROUP BY substr(date,1,7) ORDER BY month DESC LIMIT 12`)
+      db.getAllAsync(`SELECT substr(date,1,7) month,COUNT(*) sales_count,COALESCE(SUM(amount),0) revenue,COALESCE(SUM(paid_amount),0) collection,COALESCE(SUM(pending_amount),0) pending FROM sales GROUP BY substr(date,1,7) ORDER BY month DESC LIMIT 12`)
     ]);
-    set({reportSummary:summary||{},reportMethods:methods||[],reportMonthly:monthly||[]});
+    const normalized={sales_count:Number(summary?.sales_count||0),revenue:Number(summary?.revenue||0),collection:Number(summary?.collection||0),pending:Number(summary?.pending||0)};
+    set({reportSummary:normalized,reportMethods:methods||[],reportMonthly:monthly||[]});
+    return {summary:normalized,methods:methods||[],monthly:monthly||[]};
   },
   loadCustomerHistory:async(customerId)=>{
     if(!customerId) throw new Error('Customer not found');
