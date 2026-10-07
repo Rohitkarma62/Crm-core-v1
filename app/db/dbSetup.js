@@ -8,7 +8,7 @@ export const getDatabase=()=>{
 };
 
 async function addColumnIfMissing(db,table,column,definition){
-  try{await db.execAsync(\`ALTER TABLE \${table} ADD COLUMN \${column} \${definition}\`)}catch(e){
+  try{await db.execAsync(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`)}catch(e){
     const message=String(e?.message||e);
     if(!/duplicate column|already exists/i.test(message)) throw e;
   }
