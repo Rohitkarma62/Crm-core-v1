@@ -94,5 +94,5 @@ const styles=StyleSheet.create({
  row:{flexDirection:'row',flexWrap:'wrap',gap:6},
  image:{width:'100%',height:180,marginTop:8,borderRadius:10},
  history:{paddingVertical:9,borderBottomWidth:1,borderBottomColor:'#444444'},
- muted:{color:'#cccccc',fontSize:12,marginTop:3}
+ muted:{color:'#ffffff',fontSize:12,marginTop:3}
 });
