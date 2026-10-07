@@ -22,13 +22,17 @@ export default function PaymentsScreen({route}){
    const result=await ImagePicker.launchImageLibraryAsync({mediaTypes:['images'],quality:.8});
    if(result.canceled)return;
    const asset=result.assets[0];
+   if(!asset?.uri){Alert.alert('Image error','Selected image could not be read.');return}
    const dest=FileSystem.documentDirectory+'payments/';
    await FileSystem.makeDirectoryAsync(dest,{intermediates:true});
    const target=dest+'payment_'+Date.now()+'.jpg';
-   await FileSystem.copyAsync({from:asset.uri,to:target});
-   setScreenshot(target);
+   try{
+     await FileSystem.copyAsync({from:asset.uri,to:target});
+     setScreenshot(target);
+   }catch(e){Alert.alert('Image error',e?.message||'Could not save screenshot locally.')}}
  };
  const pay=async()=>{
+   if(!sale){Alert.alert('Payment error','Sale not found.');return}
    try{setBusy(true);await addPayment({saleId,customerId:sale.customer_id,amount,method,screenshotUri:screenshot});setAmount('');setScreenshot(null);Alert.alert('Success','Payment saved offline.')}catch(e){Alert.alert('Payment error',e.message)}finally{setBusy(false)}
  };
  const whatsapp=async()=>{
@@ -54,6 +58,7 @@ export default function PaymentsScreen({route}){
     const owner=company.owner?`<p><b>Owner:</b> ${company.owner}</p>`:'';
     const html=`<html><body style="font-family:Arial;padding:24px">${logo}<h1>${businessName}</h1>${owner}<p><b>Invoice:</b> ${invoiceNo}</p><p><b>Date:</b> ${sale.date}</p><hr/><h2>${sale.customer_name}</h2><p>${sale.phone||''}</p><table style="width:100%;border-collapse:collapse"><tr><td>Sale Amount</td><td>₹${Number(sale.amount).toFixed(2)}</td></tr><tr><td>Paid</td><td>₹${Number(sale.paid_amount).toFixed(2)}</td></tr><tr><td>Pending</td><td>₹${Number(sale.pending_amount).toFixed(2)}</td></tr></table><p><b>Terms:</b> ${terms}</p>${signature}</body></html>`;
     const result=await RNHTMLtoPDF.convert({html,fileName:invoiceNo,directory:'Documents'});
+    if(!result?.filePath) throw new Error('PDF was not created.');
     await saveInvoice({saleId,invoiceNo,pdfPath:result.filePath});
     Alert.alert('Invoice created',result.filePath||'PDF saved locally');
    }catch(e){Alert.alert('Invoice error',e.message)}finally{setBusy(false)}
