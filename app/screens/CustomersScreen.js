@@ -1,4 +1,5 @@
-import React,{useEffect,useState} from 'react';
+import React,{useState} from 'react';
+import {useFocusEffect} from '@react-navigation/native';
 import {Alert,FlatList,Modal,SafeAreaView,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useCRMStore} from '../../store/useCRMStore';
 import Card from '../../components/Card';
@@ -7,7 +8,7 @@ import Button from '../../components/Button';
 export default function CustomersScreen({navigation}){
  const {customers,loadCustomers,loadCustomerHistory,deleteCustomer}=useCRMStore();
  const [history,setHistory]=useState(null),[busy,setBusy]=useState(false);
- useEffect(()=>{loadCustomers().catch(()=>{})},[]);
+ useFocusEffect(React.useCallback(()=>{loadCustomers().catch(()=>{})},[loadCustomers]));
  const openHistory=async customer=>{
   try{setBusy(true);const data=await loadCustomerHistory(customer.id);setHistory({customer,data})}
   catch(e){Alert.alert('History error',e.message)}

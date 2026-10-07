@@ -1,4 +1,5 @@
-import React,{useEffect,useMemo,useState} from 'react';
+import React,{useMemo,useState} from 'react';
+import {useFocusEffect} from '@react-navigation/native';
 import {Alert,FlatList,Modal,Pressable,SafeAreaView,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useCRMStore} from '../../store/useCRMStore';
 import Button from '../../components/Button';
@@ -11,7 +12,7 @@ const empty={name:'',phone:'',details:'',source:'',status:'New',stages:'New',fol
 export default function LeadsScreen({navigation}){
  const {leads,loadLeads,saveLead,deleteLead,moveLead,convertLead}=useCRMStore();
  const [modal,setModal]=useState(false),[form,setForm]=useState(empty),[query,setQuery]=useState('');
- useEffect(()=>{loadLeads()},[]);
+ useFocusEffect(React.useCallback(()=>{loadLeads().catch(()=>{})},[loadLeads]));
  const filtered=useMemo(()=>leads.filter(x=>(x.name+' '+x.phone+' '+x.source).toLowerCase().includes(query.toLowerCase())),[leads,query]);
  const edit=(lead)=>{setForm({...lead});setModal(true)};
  const save=async()=>{if(!form.name.trim()||!form.phone.trim()){Alert.alert('Required','Name aur phone required hai.');return}try{await saveLead(form);setForm(empty);setModal(false)}catch(e){Alert.alert('Lead error',e.message)}};

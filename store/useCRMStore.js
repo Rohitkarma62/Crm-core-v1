@@ -47,11 +47,16 @@ export const useCRMStore=create((set,get)=>({
     if(!lead) throw new Error('Lead not found');
     const existing=await db.getFirstAsync('SELECT id FROM customers WHERE phone=?',[lead.phone]);
     let customerId=existing?.id;
-    if(!customerId){
-      const result=await db.runAsync('INSERT INTO customers(name,phone,total_paid,pending_amount) VALUES(?,?,0,0)',[lead.name,lead.phone]);
-      customerId=result.lastInsertRowId;
-    }
-    await db.runAsync('UPDATE leads SET stages=?,status=? WHERE id=?',['Won','Won',id]);
+    await db.withExclusiveTransactionAsync(async(txn)=>{
+      const existingCustomer=await txn.getFirstAsync('SELECT id FROM customers WHERE phone=?',[lead.phone]);
+      if(existingCustomer){
+        customerId=existingCustomer.id;
+      }else{
+        const result=await txn.runAsync('INSERT INTO customers(name,phone,total_paid,pending_amount) VALUES(?,?,0,0)',[lead.name,lead.phone]);
+        customerId=result.lastInsertRowId;
+      }
+      await txn.runAsync('UPDATE leads SET stages=?,status=? WHERE id=?',['Won','Won',id]);
+    });
     await get().loadLeads(); await get().loadCustomers(); await get().refreshDashboard();
     return customerId;
   },

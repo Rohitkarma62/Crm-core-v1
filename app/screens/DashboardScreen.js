@@ -1,11 +1,12 @@
-import React,{useEffect} from 'react';
+import React from 'react';
+import {useFocusEffect} from '@react-navigation/native';
 import {ScrollView,RefreshControl,StyleSheet,Text,View,Pressable} from 'react-native';
 import {useCRMStore} from '../../store/useCRMStore';
 import Card from '../../components/Card';
 
 export default function DashboardScreen({navigation}){
  const {stats,recentActivities,salesOverview,leadPipeline,loading,error,refreshDashboard}=useCRMStore();
- useEffect(()=>{refreshDashboard()},[]);
+ useFocusEffect(React.useCallback(()=>{refreshDashboard()},[refreshDashboard]));
  return <ScrollView style={styles.safe} refreshControl={<RefreshControl refreshing={loading} onRefresh={refreshDashboard}/>} contentContainerStyle={styles.content}>
   <Text style={styles.title}>Workshop CRM</Text><Text style={styles.sub}>Offline-first dashboard</Text>
   {error&&<Text style={styles.error}>{error}</Text>}

@@ -1,4 +1,5 @@
 import React,{useEffect,useState} from 'react';
+import {useFocusEffect} from '@react-navigation/native';
 import {Alert,FlatList,Modal,SafeAreaView,ScrollView,StyleSheet,Text,View,Pressable} from 'react-native';
 import {useCRMStore} from '../../store/useCRMStore';
 import Button from '../../components/Button';
@@ -9,7 +10,7 @@ export default function SalesScreen({navigation,route}){
  const {customers,loadCustomers,sales,loadSales,createSale}=useCRMStore();
  const [modal,setModal]=useState(false),[customerId,setCustomerId]=useState(null),[amount,setAmount]=useState(''),[busy,setBusy]=useState(false);
  const presetCustomerId=route?.params?.customerId;
- useEffect(()=>{loadCustomers();loadSales()},[]);
+ useFocusEffect(React.useCallback(()=>{loadCustomers().catch(()=>{});loadSales().catch(()=>{})},[loadCustomers,loadSales]));
  useEffect(()=>{if(presetCustomerId){setCustomerId(Number(presetCustomerId));setModal(true)}},[presetCustomerId]);
  const save=async()=>{if(busy)return;try{setBusy(true);const id=await createSale({customerId,amount});setModal(false);setAmount('');setCustomerId(null);navigation.navigate('Payments',{saleId:id})}catch(e){Alert.alert('Sale error',e.message)}finally{setBusy(false)}};
  return <SafeAreaView style={styles.safe}>
