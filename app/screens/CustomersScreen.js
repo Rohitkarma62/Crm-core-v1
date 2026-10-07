@@ -3,6 +3,7 @@ import {useFocusEffect} from '@react-navigation/native';
 import {Alert,FlatList,Modal,SafeAreaView,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useCRMStore} from '../../store/useCRMStore';
 import Card from '../../components/Card';
+import {colors,spacing,typography} from '../../theme';
 import Button from '../../components/Button';
 
 export default function CustomersScreen({navigation}){
@@ -35,4 +36,4 @@ export default function CustomersScreen({navigation}){
   </Modal>
  </SafeAreaView>
 }
-const s=StyleSheet.create({safe:{flex:1,backgroundColor:'#000000',padding:12},header:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},title:{fontSize:25,fontWeight:'800',color:'#ffffff'},grid:{gap:7,marginTop:10},row:{flexDirection:'row',flexWrap:'wrap',gap:6,marginTop:8},line:{marginTop:8},empty:{textAlign:'center',marginTop:30,color:'#ffffff'},form:{paddingBottom:20},historyItem:{paddingVertical:10,borderBottomWidth:1,borderBottomColor:'#444444'},bold:{fontWeight:'800'},muted:{color:'#ffffff',marginTop:3}});
+const s=StyleSheet.create({safe:{flex:1,backgroundColor:colors.bg,padding:spacing.lg},header:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:spacing.sm},title:{...typography.display,color:colors.text},grid:{gap:6,marginTop:spacing.md},row:{flexDirection:'row',flexWrap:'wrap',gap:6,marginTop:spacing.md},line:{marginTop:8,color:colors.text},empty:{textAlign:'center',marginTop:30,color:colors.muted},form:{padding:spacing.lg,paddingBottom:spacing.xxl},historyItem:{paddingVertical:12,borderBottomWidth:1,borderBottomColor:colors.border},bold:{...typography.bodyStrong,color:colors.text},muted:{color:colors.muted,marginTop:3},profilePhone:{...typography.body,color:colors.muted}});
