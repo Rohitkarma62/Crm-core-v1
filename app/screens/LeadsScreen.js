@@ -7,7 +7,7 @@ import Input from '../../components/Input';
 import Card from '../../components/Card';
 import {colors,spacing,typography} from '../../theme';
 
-const STAGES=['New','Contacted','Follow-up','Quotation','Won','Lost'];
+const STAGES=LEAD_STAGES;
 const empty={name:'',phone:'',details:'',source:'',status:'New',stages:'New',follow_up_date:''};
 
 export default function LeadsScreen({navigation}){

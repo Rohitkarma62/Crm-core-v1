@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 
+const SCHEMA_VERSION=2;
 let databasePromise;
 
 export const getDatabase=()=>{
@@ -93,10 +94,24 @@ export async function initDatabase(){
     CREATE INDEX IF NOT EXISTS idx_invoices_sale ON invoices(sale_id);
     CREATE INDEX IF NOT EXISTS idx_invoices_date ON invoices(date);
   `);
-  await addColumnIfMissing(db,'sales','work_description',"TEXT NOT NULL DEFAULT ''");
-  await addColumnIfMissing(db,'sales','original_amount',"REAL NOT NULL DEFAULT 0");
-  await addColumnIfMissing(db,'sales','discount_amount',"REAL NOT NULL DEFAULT 0");
-  await db.runAsync("UPDATE sales SET original_amount=amount WHERE original_amount=0 AND discount_amount=0");
+  const versionRow=await db.getFirstAsync('PRAGMA user_version');
+  const currentVersion=Number(versionRow?.user_version||0);
+
+  if(currentVersion<1){
+    await addColumnIfMissing(db,'sales','work_description',"TEXT NOT NULL DEFAULT ''");
+    await addColumnIfMissing(db,'sales','original_amount',"REAL NOT NULL DEFAULT 0");
+    await addColumnIfMissing(db,'sales','discount_amount',"REAL NOT NULL DEFAULT 0");
+    await db.runAsync("UPDATE sales SET original_amount=amount WHERE original_amount=0 AND discount_amount=0");
+  }
+
+  if(currentVersion<2){
+    await db.execAsync(`
+      CREATE INDEX IF NOT EXISTS idx_payments_method ON payments(method);
+      CREATE INDEX IF NOT EXISTS idx_sales_status ON sales(status);
+      PRAGMA user_version = ${SCHEMA_VERSION};
+    `);
+  }
+
   return db;
 }
 
