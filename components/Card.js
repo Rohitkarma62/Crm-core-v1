@@ -2,10 +2,9 @@ import React from 'react';
 import {Text,View,StyleSheet} from 'react-native';
 import {colors,radius,spacing,typography} from '../theme';
 
-export default function Card({title,value,subtitle,children}){
+export default function Card({title,subtitle,children}){
  return <View style={styles.card}>
    {!!title&&<Text style={styles.title}>{title}</Text>}
-   {value!==undefined&&<Text style={styles.value}>{value}</Text>}
    {!!subtitle&&<Text style={styles.subtitle}>{subtitle}</Text>}
    {children}
  </View>;
