@@ -28,6 +28,8 @@ jobs:
           java-version: '17'
       - name: Install dependencies
         run: npm install
+      - name: Static JavaScript validation
+        run: npm run lint
       - name: Validate Expo project
         run: npx expo-doctor
       - name: Validate Expo dependency compatibility
