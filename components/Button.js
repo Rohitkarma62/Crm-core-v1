@@ -1,19 +1,27 @@
 import React from 'react';
-import {Pressable,Text,StyleSheet,ActivityIndicator} from 'react-native';
+import {ActivityIndicator,Pressable,StyleSheet,Text} from 'react-native';
+import {colors,radius,spacing,typography} from '../theme';
 
 export default function Button({title,onPress,disabled=false,loading=false,variant='primary'}){
+ const danger=variant==='danger';
  const secondary=variant==='secondary';
- return <Pressable disabled={disabled||loading} onPress={onPress} style={({pressed})=>[styles.base,styles[variant],pressed&&styles.pressed,(disabled||loading)&&styles.disabled]}>
-   {loading?<ActivityIndicator color={secondary?'#ffffff':'#000000'}/>:<Text style={[styles.text,secondary&&styles.secondaryText]}>{title}</Text>}
+ return <Pressable disabled={disabled||loading} onPress={onPress} style={({pressed})=>[
+   styles.base,
+   danger?styles.danger:secondary?styles.secondary:styles.primary,
+   pressed&&styles.pressed,
+   (disabled||loading)&&styles.disabled
+ ]}>
+   {loading?<ActivityIndicator color={secondary||danger?colors.text:colors.bg}/>:<Text style={[styles.text,secondary&&styles.secondaryText,danger&&styles.dangerText]}>{title}</Text>}
  </Pressable>;
 }
 const styles=StyleSheet.create({
- base:{minHeight:48,borderRadius:10,paddingHorizontal:18,alignItems:'center',justifyContent:'center',marginVertical:5},
- primary:{backgroundColor:'#000000',borderWidth:1,borderColor:'#ffffff'},
- secondary:{backgroundColor:'#000000',borderWidth:1,borderColor:'#ffffff'},
- danger:{backgroundColor:'#000000',borderWidth:1,borderColor:'#ffffff'},
- text:{fontSize:16,fontWeight:'700',color:'#ffffff'},
- secondaryText:{color:'#ffffff'},
- pressed:{opacity:.8},
- disabled:{opacity:.5}
+ base:{minHeight:48,borderRadius:radius.md,paddingHorizontal:spacing.lg,alignItems:'center',justifyContent:'center',marginVertical:4},
+ primary:{backgroundColor:colors.text},
+ secondary:{backgroundColor:colors.surface,borderWidth:1,borderColor:colors.border},
+ danger:{backgroundColor:colors.surface,borderWidth:1,borderColor:'#4A2222'},
+ text:{...typography.bodyStrong,color:colors.bg},
+ secondaryText:{color:colors.text},
+ dangerText:{color:colors.danger},
+ pressed:{opacity:.72},
+ disabled:{opacity:.45}
 });
