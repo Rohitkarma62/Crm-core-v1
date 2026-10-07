@@ -18,7 +18,7 @@ export default function CustomersScreen({navigation}){
   {text:'Delete',style:'destructive',onPress:async()=>{try{setBusy(true);await deleteCustomer(customer.id)}catch(e){Alert.alert('Delete error',e.message)}finally{setBusy(false)}}}
  ]);
  return <SafeAreaView style={s.safe}>
-  <View style={s.header}><Text style={s.title}>Customers</Text><Button title="Refresh" variant="secondary" onPress={()=>loadCustomers()}/></View>
+  <View style={s.header}><Text style={s.title}>Customers</Text><Button title="Refresh" variant="secondary" onPress={()=>loadCustomers().catch(e=>Alert.alert('Refresh error',e.message))}/></View>
   <FlatList data={customers} keyExtractor={x=>String(x.id)} renderItem={({item})=><Card title={item.name} subtitle={item.phone}>
    <View style={s.grid}><Text>Total Sales: ₹{Number(item.total_sales||0).toFixed(2)}</Text><Text>Paid: ₹{Number(item.total_paid||0).toFixed(2)}</Text><Text>Pending: ₹{Number(item.pending_amount||0).toFixed(2)}</Text><Text>Sales: {item.sale_count||0}</Text></View>
    <View style={s.row}><Button title="New Sale" onPress={()=>navigation.navigate("Sales",{customerId:item.id})}/><Button title="Profile" onPress={()=>openProfile(item)}/><Button title="Delete" variant="danger" loading={busy} onPress={()=>remove(item)}/></View>
