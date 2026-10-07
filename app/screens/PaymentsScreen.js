@@ -4,12 +4,13 @@ import {Alert,Image,SafeAreaView,ScrollView,StyleSheet,Text,View,Linking} from '
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import {generatePDF} from 'react-native-html-to-pdf';
+import {PAYMENT_METHODS} from '../../app/core/constants';
 import {useCRMStore} from '../../store/useCRMStore';
 import Button from '../../components/Button';
 import Input from '../../components/Input';
 import Card from '../../components/Card';
 
-const METHODS=['Cash','UPI','Card','Cheque'];
+const METHODS=PAYMENT_METHODS;
 
 export default function PaymentsScreen({route}){
  const saleId=route.params?.saleId;
