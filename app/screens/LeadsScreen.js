@@ -21,7 +21,7 @@ export default function LeadsScreen({navigation}){
   <View style={styles.header}><Text style={styles.title}>Leads</Text><Button title="+ Add Lead" onPress={()=>{setForm(empty);setModal(true)}}/></View>
   <Input placeholder="Search name, phone, source..." value={query} onChangeText={setQuery}/>
   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.stageBar}>{STAGES.map(s=><View key={s} style={styles.stagePill}><Text style={styles.stageText}>{s}: {leads.filter(x=>x.stages===s).length}</Text></View>)}</ScrollView>
-  <FlatList data={filtered} keyExtractor={x=>String(x.id)} renderItem={({item})=><Card title={item.name} subtitle={item.phone}>
+  <FlatList data={filtered} keyExtractor={x=>String(x.id)} renderItem={({item})=>(<Card title={item.name} subtitle={item.phone}>
     <Text style={styles.meta}>{item.source||'No source'} • {item.stages}</Text>
     {!!item.details&&<Text style={styles.details}>{item.details}</Text>}
     {!!item.follow_up_date&&<Text style={styles.meta}>Follow-up: {item.follow_up_date}</Text>}
