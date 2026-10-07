@@ -4,6 +4,7 @@
     "slug":"welding-workshop-crm",
     "version":"1.0.0",
     "orientation":"portrait",
+    "newArchEnabled":false,
     "android":{"package":"com.weldingworkshop.crm"},
     "assetBundlePatterns":["**/*"]
   }
