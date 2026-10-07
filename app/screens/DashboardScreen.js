@@ -1,40 +1,19 @@
-import React,{useCallback} from 'react';
-import {ScrollView,RefreshControl,Text,View,StyleSheet} from 'react-native';
-import {useFocusEffect} from '@react-navigation/native';
+import React,{useEffect} from 'react';
+import {ScrollView,RefreshControl,StyleSheet,Text,View,Pressable} from 'react-native';
 import {useCRMStore} from '../../store/useCRMStore';
 import Card from '../../components/Card';
 
-const money=n=>`₹${Number(n||0).toLocaleString('en-IN')}`;
-
-export default function DashboardScreen(){
- const {stats,recentActivities,salesOverview,leadPipeline,loading,refreshDashboard,error}=useCRMStore();
- useFocusEffect(useCallback(()=>{refreshDashboard()},[refreshDashboard]));
- return <ScrollView style={styles.container} contentContainerStyle={styles.content}
-   refreshControl={<RefreshControl refreshing={loading} onRefresh={refreshDashboard}/>}>
-   <Text style={styles.heading}>Dashboard</Text>
-   {!!error&&<Text style={styles.error}>{error}</Text>}
-   <View style={styles.grid}>
-     <Card title="Total Leads" value={stats.leads}/>
-     <Card title="Customers" value={stats.customers}/>
-     <Card title="Sales" value={stats.sales}/>
-     <Card title="Revenue" value={money(stats.revenue)}/>
-     <Card title="Collection" value={money(stats.collection)}/>
-     <Card title="Pending Payments" value={money(stats.pending)}/>
-   </View>
-   <Card title="Sales Overview">
-     {salesOverview.length?<>{salesOverview.map((x,i)=><View key={i} style={styles.row}><Text>{x.date}</Text><Text>{money(x.amount)}</Text></View>)}</>:<Text style={styles.empty}>No sales yet</Text>}
-   </Card>
-   <Card title="Lead Pipeline">
-     {leadPipeline.length?leadPipeline.map((x,i)=><View key={i} style={styles.row}><Text>{x.stage||'Unassigned'}</Text><Text>{x.count}</Text></View>):<Text style={styles.empty}>No leads yet</Text>}
-   </Card>
-   <Card title="Recent Activities">
-     {recentActivities.length?recentActivities.map((x,i)=><View key={i} style={styles.row}><Text>{x.type}</Text><Text>{money(x.amount)} · {x.date}</Text></View>):<Text style={styles.empty}>No activity yet</Text>}
-   </Card>
- </ScrollView>;
+export default function DashboardScreen({navigation}){
+ const {stats,recentActivities,salesOverview,leadPipeline,loading,error,refreshDashboard}=useCRMStore();
+ useEffect(()=>{refreshDashboard()},[]);
+ return <ScrollView style={styles.safe} refreshControl={<RefreshControl refreshing={loading} onRefresh={refreshDashboard}/>} contentContainerStyle={styles.content}>
+  <Text style={styles.title}>Workshop CRM</Text><Text style={styles.sub}>Offline-first dashboard</Text>
+  {error&&<Text style={styles.error}>{error}</Text>}
+  <View style={styles.grid}>{[['Leads',stats.leads],['Customers',stats.customers],['Sales',stats.sales],['Revenue','₹'+Number(stats.revenue||0).toFixed(0)],['Collection','₹'+Number(stats.collection||0).toFixed(0)],['Pending','₹'+Number(stats.pending||0).toFixed(0)]].map(([t,v])=><Card key={t} title={t} value={v}/>)}</View>
+  <Pressable onPress={()=>navigation.navigate('Leads')}><Card title="Lead Pipeline"><Text>{leadPipeline.map(x=>x.stage+': '+x.count).join('  •  ')||'No leads yet'}</Text></Card></Pressable>
+  <Pressable onPress={()=>navigation.navigate('Customers')}><Card title="Customers"><Text>Open customer list →</Text></Card></Pressable>
+  <Card title="Sales Overview">{salesOverview.length?salesOverview.map(x=><Text key={x.date} style={styles.line}>{x.date}: ₹{Number(x.amount).toFixed(0)}</Text>):<Text>No sales yet.</Text>}</Card>
+  <Card title="Recent Activities">{recentActivities.length?recentActivities.map((x,i)=><Text key={i} style={styles.line}>{x.date} • {x.type} • ₹{Number(x.amount).toFixed(0)}</Text>):<Text>No activity yet.</Text>}</Card>
+ </ScrollView>
 }
-const styles=StyleSheet.create({
- container:{flex:1,backgroundColor:'#f4f6f8'},content:{padding:16,paddingBottom:32},
- heading:{fontSize:28,fontWeight:'800',marginBottom:14,color:'#17202a'},grid:{flexDirection:'row',flexWrap:'wrap',gap:10},
- row:{flexDirection:'row',justifyContent:'space-between;paddingVertical:9,borderBottomWidth:1,borderBottomColor:'#eef1f4'},
- empty:{color:'#7b8794',paddingVertical:8},error:{color:'#c62828',marginBottom:10}
-});
+const styles=StyleSheet.create({safe:{flex:1,backgroundColor:'#f5f7fb'},content:{padding:12},title:{fontSize:28,fontWeight:'800'},sub:{color:'#64748b',marginBottom:12},grid:{gap:0},error:{color:'#c62828',marginBottom:8},line:{marginTop:7,color:'#334155'}});
