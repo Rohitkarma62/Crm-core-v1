@@ -18,4 +18,4 @@ export default function DashboardScreen({navigation}){
   <Card title="Recent Activities">{recentActivities.length?recentActivities.map((x,i)=><Text key={i} style={styles.line}>{x.date} • {x.type} • ₹{Number(x.amount).toFixed(0)}</Text>):<Text>No activity yet.</Text>}</Card>
  </ScrollView>
 }
-const styles=StyleSheet.create({safe:{flex:1,backgroundColor:'#ffffff'},content:{padding:12},title:{fontSize:28,fontWeight:'800'},sub:{color:'#555555',marginBottom:12},grid:{gap:0},error:{color:'#111111',marginBottom:8},line:{marginTop:7,color:'#222222'}});
+const styles=StyleSheet.create({safe:{flex:1,backgroundColor:'#000000'},content:{padding:12},title:{fontSize:28,fontWeight:'800'},sub:{color:'#cccccc',marginBottom:12},grid:{gap:0},error:{color:'#ffffff',marginBottom:8},line:{marginTop:7,color:'#222222'}});
