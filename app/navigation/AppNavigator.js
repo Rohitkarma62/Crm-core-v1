@@ -1,4 +1,5 @@
 import React from 'react';
+import {StatusBar} from 'react-native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import DashboardScreen from '../screens/DashboardScreen';
 import LeadsScreen from '../screens/LeadsScreen';
@@ -10,11 +11,11 @@ import SettingsScreen from '../screens/SettingsScreen';
 
 const Stack=createNativeStackNavigator();
 export default function AppNavigator(){
- return <Stack.Navigator screenOptions={{
-   headerStyle:{backgroundColor:'#ffffff'},
-   headerTintColor:'#111111',
+ return <><StatusBar barStyle="light-content" backgroundColor="#000000"/><Stack.Navigator screenOptions={{
+   headerStyle:{backgroundColor:'#000000'},
+   headerTintColor:'#ffffff',
    headerTitleStyle:{fontWeight:'800'},
-   contentStyle:{backgroundColor:'#ffffff'}
+   contentStyle:{backgroundColor:'#000000'}
  }}>
   <Stack.Screen name="Dashboard" component={DashboardScreen}/>
   <Stack.Screen name="Leads" component={LeadsScreen}/>
