@@ -8,15 +8,15 @@ import Card from '../../components/Card';
 
 export default function SalesScreen({navigation,route}){
  const {customers,loadCustomers,sales,loadSales,createSale}=useCRMStore();
- const [modal,setModal]=useState(false),[customerId,setCustomerId]=useState(null),[amount,setAmount]=useState(''),[busy,setBusy]=useState(false);
+ const [modal,setModal]=useState(false),[customerId,setCustomerId]=useState(null),[amount,setAmount]=useState(''),[workDescription,setWorkDescription]=useState(''),[discount,setDiscount]=useState(''),[busy,setBusy]=useState(false);
  const presetCustomerId=route?.params?.customerId;
  useFocusEffect(React.useCallback(()=>{loadCustomers().catch(()=>{});loadSales().catch(()=>{})},[loadCustomers,loadSales]));
  useEffect(()=>{if(presetCustomerId){setCustomerId(Number(presetCustomerId));setModal(true)}},[presetCustomerId]);
- const save=async()=>{if(busy)return;try{setBusy(true);const id=await createSale({customerId,amount});setModal(false);setAmount('');setCustomerId(null);navigation.navigate('Payments',{saleId:id})}catch(e){Alert.alert('Sale error',e.message)}finally{setBusy(false)}};
+ const save=async()=>{if(busy)return;try{setBusy(true);const id=await createSale({customerId,amount,workDescription,discountAmount:discount});setModal(false);setAmount('');setWorkDescription('');setDiscount('');setCustomerId(null);navigation.navigate('Payments',{saleId:id})}catch(e){Alert.alert('Sale error',e.message)}finally{setBusy(false)}};
  return <SafeAreaView style={styles.safe}>
   <View style={styles.header}><Text style={styles.title}>Sales</Text><Button title="+ New Sale" onPress={()=>setModal(true)}/></View>
   <FlatList data={sales} keyExtractor={x=>String(x.id)} renderItem={({item})=><Card title={item.customer_name} subtitle={item.phone}>
-    <Text style={styles.line}>Sale: ₹{Number(item.amount).toFixed(2)}</Text>
+    <Text style={styles.line}>Work: {item.work_description||'Not specified'}</Text><Text style={styles.line}>Final Sale: ₹{Number(item.amount).toFixed(2)}{Number(item.discount_amount||0)>0?` • Discount ₹${Number(item.discount_amount).toFixed(2)}`:''}</Text>
     <Text style={styles.line}>Paid: ₹{Number(item.paid_amount).toFixed(2)} • Pending: ₹{Number(item.pending_amount).toFixed(2)}</Text>
     <Text style={styles.status}>{item.status} • {item.date}</Text>
     <View style={styles.row}><Button title="Payments" onPress={()=>navigation.navigate('Payments',{saleId:item.id})}/></View>
@@ -24,7 +24,7 @@ export default function SalesScreen({navigation,route}){
   <Modal visible={modal} animationType="slide" onRequestClose={()=>setModal(false)}><SafeAreaView style={styles.safe}><ScrollView contentContainerStyle={styles.form}>
    <Text style={styles.title}>New Sale</Text><Text style={styles.label}>Customer</Text>
    {customers.map(c=><Pressable key={c.id} onPress={()=>setCustomerId(c.id)} style={[styles.customer,customerId===c.id&&styles.selected]}><Text style={styles.bold}>{c.name}</Text><Text>{c.phone}</Text></Pressable>)}
-   <Input label="Amount" value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="Sale amount"/>
+   <Input label="Total Work Amount" value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="Example: 25000"/>\n   <Input label="Work / Job Description" value={workDescription} onChangeText={setWorkDescription} placeholder="Example: Gate welding + grill repair"/>\n   <Input label="Customer Discount" value={discount} onChangeText={setDiscount} keyboardType="decimal-pad" placeholder="Discount amount, optional"/>
    <Button title="Create Sale" loading={busy} onPress={save}/><Button title="Cancel" variant="secondary" onPress={()=>setModal(false)}/>
   </ScrollView></SafeAreaView></Modal>
  </SafeAreaView>
