@@ -124,10 +124,17 @@ export const useCRMStore=create((set,get)=>({
     const customer=await db.getFirstAsync('SELECT id FROM customers WHERE id=?',[customerId]);
     if(!customer) throw new Error('Customer not found');
     const finalAmount=Math.round((value-discount)*100)/100;
-    const result=await db.runAsync('INSERT INTO sales(customer_id,amount,date,status,paid_amount,pending_amount,work_description,original_amount,discount_amount) VALUES(?,?,?,?,?,?,?,?,?)',
-      [customerId,finalAmount,normalizeDate(date),'Pending',0,finalAmount,String(workDescription||'').trim(),value,discount]);
+    const normalizedDate=normalizeDate(date);
+    let saleId;
+    await db.withExclusiveTransactionAsync(async(txn)=>{
+      const result=await txn.runAsync('INSERT INTO sales(customer_id,amount,date,status,paid_amount,pending_amount,work_description,original_amount,discount_amount) VALUES(?,?,?,?,?,?,?,?,?)',
+        [customerId,finalAmount,normalizedDate,'Pending',0,finalAmount,String(workDescription||'').trim(),value,discount]);
+      saleId=result.lastInsertRowId;
+      await txn.runAsync('UPDATE customers SET total_paid=COALESCE((SELECT SUM(amount) FROM payments WHERE customer_id=?),0),pending_amount=COALESCE((SELECT SUM(pending_amount) FROM sales WHERE customer_id=?),0) WHERE id=?',
+        [customerId,customerId,customerId]);
+    });
     await refreshAfterMutation(()=>get().loadSales(),()=>get().loadCustomers(),()=>get().refreshDashboard());
-    return result.lastInsertRowId;
+    return saleId;
   },'Sale creation failed'),
   addPayment:async({saleId,customerId,amount,method,screenshotUri})=>runAction(async()=>{
     const value=positiveMoney(amount,'Payment amount');
