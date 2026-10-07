@@ -4,8 +4,8 @@ import {Pressable,RefreshControl,ScrollView,StyleSheet,Text,View} from 'react-na
 import {useCRMStore} from '../../store/useCRMStore';
 import {colors,spacing,radius,typography} from '../../theme';
 
-function Metric({label,value,sub}){
- return <View style={s.metric}><Text style={s.metricLabel}>{label}</Text><Text style={s.metricValue}>{value}</Text>{sub&&<Text style={s.metricSub}>{sub}</Text>}</View>;
+function Metric({label,value}){
+ return <View style={s.metric}><Text style={s.metricLabel}>{label}</Text><Text style={s.metricValue}>{value}</Text></View>;
 }
 function QuickAction({label,onPress}){
  return <Pressable onPress={onPress} style={({pressed})=>[s.action,pressed&&s.pressed]}><Text style={s.actionPlus}>+</Text><Text style={s.actionText}>{label}</Text></Pressable>;
@@ -70,7 +70,6 @@ const s=StyleSheet.create({
  metric:{width:'48%',minHeight:88,backgroundColor:colors.surface,borderWidth:1,borderColor:colors.border,borderRadius:radius.md,padding:spacing.md},
  metricLabel:{...typography.caption,color:colors.muted},
  metricValue:{fontSize:20,fontWeight:'800',color:colors.text,marginTop:5},
- metricSub:{...typography.caption,color:colors.soft},
  sectionHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginBottom:spacing.sm,marginTop:spacing.md},
  sectionTitle:{...typography.h2,color:colors.text,marginBottom:spacing.sm},
  link:{...typography.caption,color:colors.text},
