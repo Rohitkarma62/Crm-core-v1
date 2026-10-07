@@ -24,10 +24,12 @@ export default function CustomersScreen({navigation}){
   </Card>} ListEmptyComponent={<Text style={s.empty}>No customers yet. Convert a lead to create one.</Text>}/>
   <Modal visible={!!profile} animationType="slide" onRequestClose={()=>setProfile(null)}>
    <SafeAreaView style={s.safe}><ScrollView contentContainerStyle={s.form}>
-    <Text style={s.title}>{profile?.customer?.name}</Text><Text>{profile?.customer?.phone}</Text>\n    <Card title="Customer Summary"><Text>Total Jobs: {profile?.stats?.totalJobs||0}</Text><Text style={s.line}>Lifetime Work: ₹{Number(profile?.stats?.totalSpent||0).toFixed(2)}</Text><Text style={s.line}>Total Discount Given: ₹{Number(profile?.stats?.totalDiscount||0).toFixed(2)}</Text><Text style={s.line}>Average Job: ₹{Number(profile?.stats?.averageJob||0).toFixed(2)}</Text><Text style={s.line}>Last Job: {profile?.stats?.lastJobDate||'No job yet'}</Text></Card>
+    <Text style={s.title}>{profile?.customer?.name}</Text><Text>{profile?.customer?.phone}</Text>
+    <Card title="Customer Summary"><Text>Total Jobs: {profile?.stats?.totalJobs||0}</Text><Text style={s.line}>Lifetime Work: ₹{Number(profile?.stats?.totalSpent||0).toFixed(2)}</Text><Text style={s.line}>Total Discount Given: ₹{Number(profile?.stats?.totalDiscount||0).toFixed(2)}</Text><Text style={s.line}>Average Job: ₹{Number(profile?.stats?.averageJob||0).toFixed(2)}</Text><Text style={s.line}>Last Job: {profile?.stats?.lastJobDate||'No job yet'}</Text></Card>
     <Card title="Work History">{profile?.sales?.length?profile.sales.map(x=><View key={x.id} style={s.historyItem}><Text style={s.bold}>{x.work_description||'General welding work'}</Text><Text>Final: ₹{Number(x.amount).toFixed(2)} • {x.status}</Text><Text>Original: ₹{Number(x.original_amount||x.amount).toFixed(2)} • Discount: ₹{Number(x.discount_amount||0).toFixed(2)}</Text><Text style={s.muted}>{x.date}</Text></View>):<Text>No work history yet.</Text>}</Card>
     <Card title="Payment History">{profile?.payments?.length?profile.payments.map(x=><Text key={x.id} style={s.line}>₹{Number(x.amount).toFixed(2)} • {x.method} • {x.date}</Text>):<Text>No payments.</Text>}</Card>
-    <Card title="Invoices">{profile?.invoices?.length?profile.invoices.map(x=><Text key={x.id} style={s.line}>{x.invoice_no} • {x.date}</Text>):<Text>No invoices.</Text>}</Card>\n    <Button title="New Sale for this Customer" onPress={()=>{setProfile(null);navigation.navigate('Sales',{customerId:profile?.customer?.id})}}/>
+    <Card title="Invoices">{profile?.invoices?.length?profile.invoices.map(x=><Text key={x.id} style={s.line}>{x.invoice_no} • {x.date}</Text>):<Text>No invoices.</Text>}</Card>
+    <Button title="New Sale for this Customer" onPress={()=>{setProfile(null);navigation.navigate('Sales',{customerId:profile?.customer?.id})}}/>
     <Button title="Close" variant="secondary" onPress={()=>setProfile(null)}/>
    </ScrollView></SafeAreaView>
   </Modal>
