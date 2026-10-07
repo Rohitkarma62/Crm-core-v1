@@ -35,4 +35,4 @@ export default function CustomersScreen({navigation}){
   </Modal>
  </SafeAreaView>
 }
-const s=StyleSheet.create({safe:{flex:1,backgroundColor:'#ffffff',padding:12},header:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},title:{fontSize:25,fontWeight:'800',color:'#111111'},grid:{gap:7,marginTop:10},row:{flexDirection:'row',flexWrap:'wrap',gap:6,marginTop:8},line:{marginTop:8},empty:{textAlign:'center',marginTop:30,color:'#555555'},form:{paddingBottom:20},historyItem:{paddingVertical:10,borderBottomWidth:1,borderBottomColor:'#dddddd'},bold:{fontWeight:'800'},muted:{color:'#555555',marginTop:3}});
+const s=StyleSheet.create({safe:{flex:1,backgroundColor:'#000000',padding:12},header:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},title:{fontSize:25,fontWeight:'800',color:'#ffffff'},grid:{gap:7,marginTop:10},row:{flexDirection:'row',flexWrap:'wrap',gap:6,marginTop:8},line:{marginTop:8},empty:{textAlign:'center',marginTop:30,color:'#cccccc'},form:{paddingBottom:20},historyItem:{paddingVertical:10,borderBottomWidth:1,borderBottomColor:'#444444'},bold:{fontWeight:'800'},muted:{color:'#cccccc',marginTop:3}});
