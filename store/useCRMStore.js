@@ -201,30 +201,6 @@ export const useCRMStore=create((set,get)=>({
     if(!result.changes) throw new Error('Customer not found');
     await refreshAfterMutation(()=>get().loadCustomers(),()=>get().loadSales(),()=>get().refreshDashboard());
   },'Customer deletion failed'),
-  deleteSale:async(id)=>runAction(async()=>{
-    if(!id) throw new Error('Sale not found');
-    const db=await getDatabase();
-    const result=await db.runAsync('DELETE FROM sales WHERE id=?',[id]);
-    if(!result.changes) throw new Error('Sale not found');
-    await refreshAfterMutation(()=>get().loadSales(),()=>get().loadCustomers(),()=>get().refreshDashboard());
-  },'Sale deletion failed'),
-  deletePayment:async(id)=>{
-    if(!id) throw new Error('Payment not found');
-    const db=await getDatabase();
-    const payment=await db.getFirstAsync('SELECT sale_id,customer_id FROM payments WHERE id=?',[id]);
-    if(!payment) throw new Error('Payment not found');
-    await db.withExclusiveTransactionAsync(async(txn)=>{
-      await txn.runAsync('DELETE FROM payments WHERE id=?',[id]);
-      const sale=await txn.getFirstAsync('SELECT amount FROM sales WHERE id=?',[payment.sale_id]);
-      if(sale){
-        const paidRow=await txn.getFirstAsync('SELECT COALESCE(SUM(amount),0) paid FROM payments WHERE sale_id=?',[payment.sale_id]);
-        const paid=Number(paidRow?.paid||0), pending=Math.max(0,Number(sale.amount)-paid);
-        await txn.runAsync('UPDATE sales SET paid_amount=?,pending_amount=?,status=? WHERE id=?',[paid,pending,pending<=0.0001?'Paid':'Pending',payment.sale_id]);
-      }
-      await txn.runAsync('UPDATE customers SET total_paid=COALESCE((SELECT SUM(amount) FROM payments WHERE customer_id=?),0),pending_amount=COALESCE((SELECT SUM(pending_amount) FROM sales WHERE customer_id=?),0) WHERE id=?',[payment.customer_id,payment.customer_id,payment.customer_id]);
-    });
-    await refreshAfterMutation(()=>get().loadSales(),()=>get().loadCustomers(),()=>get().refreshDashboard());
-  },
   loadCompanySettings:async()=>{
     const db=await getDatabase();
     const row=await db.getFirstAsync('SELECT * FROM company_settings LIMIT 1');
