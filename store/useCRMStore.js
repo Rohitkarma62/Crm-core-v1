@@ -81,21 +81,25 @@ export const useCRMStore=create((set,get)=>({
   },
   addPayment:async({saleId,customerId,amount,method,screenshotUri})=>{
     const value=Number(amount);
+    if(!['Cash','UPI','Card','Cheque'].includes(method)) throw new Error('Invalid payment method');
     if(!saleId||!customerId||!Number.isFinite(value)||value<=0) throw new Error('Valid payment required');
     const db=await getDatabase();
     const sale=await db.getFirstAsync('SELECT amount,paid_amount FROM sales WHERE id=?',[saleId]);
     if(!sale) throw new Error('Sale not found');
     const remaining=Number(sale.amount)-Number(sale.paid_amount||0);
     if(value>remaining+0.0001) throw new Error('Payment pending amount se zyada nahi ho sakta');
-    await db.runAsync('INSERT INTO payments(sale_id,customer_id,amount,method,screenshot_uri,date) VALUES(?,?,?,?,?,?)',[saleId,customerId,value,method,screenshotUri||null,new Date().toISOString()]);
+    await db.withTransactionAsync(async()=>{
+      await db.runAsync('INSERT INTO payments(sale_id,customer_id,amount,method,screenshot_uri,date) VALUES(?,?,?,?,?,?)',[saleId,customerId,value,method,screenshotUri||null,new Date().toISOString()]);
     const paid=Number(sale.paid_amount||0)+value;
     const pending=Math.max(0,Number(sale.amount)-paid);
     const status=pending<=0.0001?'Paid':'Pending';
     await db.runAsync('UPDATE sales SET paid_amount=?,pending_amount=?,status=? WHERE id=?',[paid,pending,status,saleId]);
-    await db.runAsync('UPDATE customers SET total_paid=COALESCE((SELECT SUM(amount) FROM payments WHERE customer_id=?),0),pending_amount=COALESCE((SELECT SUM(pending_amount) FROM sales WHERE customer_id=?),0) WHERE id=?',[customerId,customerId,customerId]);
+      await db.runAsync('UPDATE customers SET total_paid=COALESCE((SELECT SUM(amount) FROM payments WHERE customer_id=?),0),pending_amount=COALESCE((SELECT SUM(pending_amount) FROM sales WHERE customer_id=?),0) WHERE id=?',[customerId,customerId,customerId]);
+    });
     await get().loadSales(); await get().loadCustomers(); await get().refreshDashboard(); await get().loadPayments(saleId);
   },
   saveInvoice:async({saleId,invoiceNo,pdfPath,date})=>{
+    if(!saleId||!invoiceNo) throw new Error('Sale and invoice number are required');
     const db=await getDatabase();
     await db.runAsync('INSERT OR REPLACE INTO invoices(sale_id,invoice_no,pdf_path,date) VALUES(?,?,?,?)',[saleId,invoiceNo,pdfPath||null,date||new Date().toISOString()]);
   },
@@ -107,6 +111,45 @@ export const useCRMStore=create((set,get)=>({
       db.getAllAsync(`SELECT substr(date,1,7) month,COUNT(*) sales_count,COALESCE(SUM(amount),0) revenue,COALESCE(SUM(paid_amount),0) collection FROM sales GROUP BY substr(date,1,7) ORDER BY month DESC LIMIT 12`)
     ]);
     set({reportSummary:summary||{},reportMethods:methods||[],reportMonthly:monthly||[]});
+  },
+  loadCustomerHistory:async(customerId)=>{
+    if(!customerId) throw new Error('Customer not found');
+    const db=await getDatabase();
+    const [sales,payments,invoices]=await Promise.all([
+      db.getAllAsync('SELECT * FROM sales WHERE customer_id=? ORDER BY date DESC,id DESC',[customerId]),
+      db.getAllAsync('SELECT * FROM payments WHERE customer_id=? ORDER BY date DESC,id DESC',[customerId]),
+      db.getAllAsync('SELECT i.* FROM invoices i JOIN sales s ON s.id=i.sale_id WHERE s.customer_id=? ORDER BY i.date DESC,i.id DESC',[customerId])
+    ]);
+    return {sales:sales||[],payments:payments||[],invoices:invoices||[]};
+  },
+  deleteCustomer:async(id)=>{
+    if(!id) throw new Error('Customer not found');
+    const db=await getDatabase();
+    await db.runAsync('DELETE FROM customers WHERE id=?',[id]);
+    await get().loadCustomers(); await get().loadSales(); await get().refreshDashboard();
+  },
+  deleteSale:async(id)=>{
+    if(!id) throw new Error('Sale not found');
+    const db=await getDatabase();
+    await db.runAsync('DELETE FROM sales WHERE id=?',[id]);
+    await get().loadSales(); await get().loadCustomers(); await get().refreshDashboard();
+  },
+  deletePayment:async(id)=>{
+    if(!id) throw new Error('Payment not found');
+    const db=await getDatabase();
+    const payment=await db.getFirstAsync('SELECT sale_id,customer_id FROM payments WHERE id=?',[id]);
+    if(!payment) throw new Error('Payment not found');
+    await db.withTransactionAsync(async()=>{
+      await db.runAsync('DELETE FROM payments WHERE id=?',[id]);
+      const sale=await db.getFirstAsync('SELECT amount FROM sales WHERE id=?',[payment.sale_id]);
+      if(sale){
+        const paidRow=await db.getFirstAsync('SELECT COALESCE(SUM(amount),0) paid FROM payments WHERE sale_id=?',[payment.sale_id]);
+        const paid=Number(paidRow?.paid||0), pending=Math.max(0,Number(sale.amount)-paid);
+        await db.runAsync('UPDATE sales SET paid_amount=?,pending_amount=?,status=? WHERE id=?',[paid,pending,pending<=0.0001?'Paid':'Pending',payment.sale_id]);
+      }
+      await db.runAsync('UPDATE customers SET total_paid=COALESCE((SELECT SUM(amount) FROM payments WHERE customer_id=?),0),pending_amount=COALESCE((SELECT SUM(pending_amount) FROM sales WHERE customer_id=?),0) WHERE id=?',[payment.customer_id,payment.customer_id,payment.customer_id]);
+    });
+    await get().loadSales(); await get().loadCustomers(); await get().refreshDashboard();
   },
   loadCompanySettings:async()=>{
     const db=await getDatabase();
