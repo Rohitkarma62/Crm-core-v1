@@ -2,10 +2,10 @@
   "expo":{
     "name":"Welding Workshop CRM",
     "slug":"welding-workshop-crm",
-    "version":"1.0.0",
+    "version":"1.0.1",
     "orientation":"portrait",
     "newArchEnabled":false,
-    "android":{"package":"com.weldingworkshop.crm"},
+    "android":{"package":"com.weldingworkshop.crm","versionCode":2},
     "assetBundlePatterns":["**/*"]
   }
 }
