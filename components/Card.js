@@ -10,6 +10,6 @@ export default function Card({title,value,subtitle,children}){
  </View>;
 }
 const styles=StyleSheet.create({
- card:{backgroundColor:'#111111',borderRadius:14,padding:16,marginBottom:12,elevation:2,shadowColor:'#000',shadowOpacity:.08,shadowRadius:5},
- title:{fontSize:14,fontWeight:'700',color:'#cccccc'},value:{fontSize:25,fontWeight:'800',color:'#ffffff',marginTop:4},subtitle:{fontSize:12,color:'#cccccc',marginTop:3}
+ card:{backgroundColor:'#000000',borderRadius:14,padding:16,marginBottom:12,elevation:2,shadowColor:'#000',shadowOpacity:.08,shadowRadius:5},
+ title:{fontSize:14,fontWeight:'700',color:'#ffffff'},value:{fontSize:25,fontWeight:'800',color:'#ffffff',marginTop:4},subtitle:{fontSize:12,color:'#ffffff',marginTop:3}
 });
