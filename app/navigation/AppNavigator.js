@@ -10,19 +10,25 @@ import ReportsScreen from '../screens/ReportsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 
 const Stack=createNativeStackNavigator();
+
 export default function AppNavigator(){
- return <><StatusBar barStyle="light-content" backgroundColor="#000000"/><Stack.Navigator screenOptions={{
-   headerStyle:{backgroundColor:'#000000'},
-   headerTintColor:'#ffffff',
-   headerTitleStyle:{fontWeight:'800'},
-   contentStyle:{backgroundColor:'#000000'}
- }}>
-  <Stack.Screen name="Dashboard" component={DashboardScreen}/>
-  <Stack.Screen name="Leads" component={LeadsScreen}/>
-  <Stack.Screen name="Customers" component={CustomersScreen}/>
-  <Stack.Screen name="Sales" component={SalesScreen}/>
-  <Stack.Screen name="Payments" component={PaymentsScreen}/>
-  <Stack.Screen name="Reports" component={ReportsScreen}/>
-  <Stack.Screen name="Settings" component={SettingsScreen}/>
- </Stack.Navigator>
+  return (
+    <>
+      <StatusBar barStyle="light-content" backgroundColor="#000000"/>
+      <Stack.Navigator screenOptions={{
+        headerStyle:{backgroundColor:'#000000'},
+        headerTintColor:'#ffffff',
+        headerTitleStyle:{fontWeight:'800'},
+        contentStyle:{backgroundColor:'#000000'}
+      }}>
+        <Stack.Screen name="Dashboard" component={DashboardScreen}/>
+        <Stack.Screen name="Leads" component={LeadsScreen}/>
+        <Stack.Screen name="Customers" component={CustomersScreen}/>
+        <Stack.Screen name="Sales" component={SalesScreen}/>
+        <Stack.Screen name="Payments" component={PaymentsScreen}/>
+        <Stack.Screen name="Reports" component={ReportsScreen}/>
+        <Stack.Screen name="Settings" component={SettingsScreen}/>
+      </Stack.Navigator>
+    </>
+  );
 }
