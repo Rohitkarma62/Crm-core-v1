@@ -1,8 +1,12 @@
 import React,{useEffect,useState} from 'react';
-import {View,ActivityIndicator,Text,StyleSheet} from 'react-native';
+import {View,ActivityIndicator,Text,StyleSheet,Appearance} from 'react-native';
 import {NavigationContainer,DarkTheme} from '@react-navigation/native';
 import AppNavigator from './app/navigation/AppNavigator';
 import {initDatabase} from './app/db/dbSetup';
+
+Text.defaultProps=Text.defaultProps||{};
+Text.defaultProps.style=[{color:'#ffffff'},Text.defaultProps.style];
+Appearance.setColorScheme('dark');
 
 export default function App(){
  const [ready,setReady]=useState(false);
