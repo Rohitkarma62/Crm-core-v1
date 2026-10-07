@@ -70,8 +70,9 @@ export const useCRMStore=create((set,get)=>({
   moveLead:async(id,stage)=>runAction(async()=>{
     if(!id||!LEAD_STAGES.includes(stage)) throw new Error('Invalid lead stage');
     const db=await getDatabase();
-    await db.runAsync('UPDATE leads SET stages=?,status=? WHERE id=?',[stage,stage,id]);
-    await get().loadLeads(); await get().refreshDashboard();
+    const result=await db.runAsync('UPDATE leads SET stages=?,status=? WHERE id=?',[stage,stage,id]);
+    if(!result.changes) throw new Error('Lead not found');
+    await refreshAfterMutation(()=>get().loadLeads(),()=>get().refreshDashboard());
   },'Lead stage update failed'),
   convertLead:async(id)=>{
     const db=await getDatabase();
