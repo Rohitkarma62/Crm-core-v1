@@ -5,7 +5,7 @@ const emptyStats={leads:0,customers:0,sales:0,revenue:0,collection:0,pending:0};
 
 export const useCRMStore=create((set,get)=>({
   stats:emptyStats,recentActivities:[],salesOverview:[],leadPipeline:[],loading:false,error:null,
-  leads:[],customers:[],
+  leads:[],customers:[],sales:[],payments:[],reportSummary:{},reportMethods:[],reportMonthly:[],companySettings:{},
   refreshDashboard:async()=>{
     set({loading:true,error:null});
     try{
