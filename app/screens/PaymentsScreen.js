@@ -72,4 +72,4 @@ export default function PaymentsScreen({route}){
   <Card title="Payment History">{payments.map(p=><View key={p.id} style={styles.history}><Text>₹{Number(p.amount).toFixed(2)} • {p.method}</Text><Text style={styles.muted}>{p.date}</Text>{p.screenshot_uri&&<Text style={styles.muted}>Screenshot saved locally</Text>}</View>)}</Card>
  </ScrollView></SafeAreaView>
 }
-const styles=StyleSheet.create({safe:{flex:1,backgroundColor:'#f5f7fb',padding:12},line:{marginTop:6},label:{fontWeight:'700',marginBottom:7},row:{flexDirection:'row',flexWrap:'wrap',gap:6},image:{width:'100%',height:180,marginTop:8,borderRadius:10},history:{paddingVertical:9,borderBottomWidth:1,borderBottomColor:'#e2e8f0'},muted:{color:'#64748b',fontSize:12,marginTop:3}});
+const styles=StyleSheet.create({safe:{flex:1,backgroundColor:'#fffffffff',padding:12},line:{marginTop:6},label:{fontWeight:'700',marginBottom:7},row:{flexDirection:'row',flexWrap:'wrap',gap:6},image:{width:'100%',height:180,marginTop:8,borderRadius:10},history:{paddingVertical:9,borderBottomWidth:1,borderBottomColor:'#dddddd'},muted:{color:'#555555',fontSize:12,marginTop:3}});
