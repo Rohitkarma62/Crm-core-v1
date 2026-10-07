@@ -194,16 +194,6 @@ export const useCRMStore=create((set,get)=>({
     const list=sales||[],totalJobs=list.length,totalSpent=list.reduce((a,x)=>a+Number(x.amount||0),0),totalDiscount=list.reduce((a,x)=>a+Number(x.discount_amount||0),0);
     return {customer,sales:list,payments:payments||[],invoices:invoices||[],stats:{totalJobs,totalSpent,totalDiscount,averageJob:totalJobs?totalSpent/totalJobs:0,discountRate:(totalSpent+totalDiscount)>0?(totalDiscount/(totalSpent+totalDiscount))*100:0,lastJobDate:list[0]?.date||null}};
   },
-  loadCustomerHistory:async(customerId)=>{
-    if(!customerId) throw new Error('Customer not found');
-    const db=await getDatabase();
-    const [sales,payments,invoices]=await Promise.all([
-      db.getAllAsync('SELECT * FROM sales WHERE customer_id=? ORDER BY date DESC,id DESC',[customerId]),
-      db.getAllAsync('SELECT * FROM payments WHERE customer_id=? ORDER BY date DESC,id DESC',[customerId]),
-      db.getAllAsync('SELECT i.* FROM invoices i JOIN sales s ON s.id=i.sale_id WHERE s.customer_id=? ORDER BY i.date DESC,i.id DESC',[customerId])
-    ]);
-    return {sales:sales||[],payments:payments||[],invoices:invoices||[]};
-  },
   deleteCustomer:async(id)=>runAction(async()=>{
     if(!id) throw new Error('Customer not found');
     const db=await getDatabase();
