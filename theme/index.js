@@ -6,19 +6,16 @@ export const colors={
   text:'#FFFFFF',
   muted:'#A3A3A3',
   soft:'#737373',
-  accent:'#FFFFFF',
   danger:'#FF5C5C',
   success:'#5FE3A1',
-  warning:'#F5C451'
 };
 
 export const spacing={xs:4,sm:8,md:12,lg:16,xl:20,xxl:24};
 
-export const radius={sm:8,md:12,lg:16,pill:999};
+export const radius={md:12,lg:16,pill:999};
 
 export const typography={
   display:{fontSize:30,lineHeight:36,fontWeight:'800'},
-  h1:{fontSize:24,lineHeight:30,fontWeight:'800'},
   h2:{fontSize:18,lineHeight:24,fontWeight:'800'},
   body:{fontSize:15,lineHeight:21,fontWeight:'500'},
   bodyStrong:{fontSize:15,lineHeight:21,fontWeight:'700'},
