@@ -1,4 +1,5 @@
 import React,{useEffect,useState} from 'react';
+import {useFocusEffect} from '@react-navigation/native';
 import {Alert,Image,SafeAreaView,ScrollView,StyleSheet,Text,View,Linking} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
@@ -16,7 +17,7 @@ export default function PaymentsScreen({route}){
  const sale=sales.find(x=>Number(x.id)===Number(saleId));
  const [amount,setAmount]=useState(''),[method,setMethod]=useState('Cash'),[screenshot,setScreenshot]=useState(null),[busy,setBusy]=useState(false);
 
- useEffect(()=>{loadSales();loadCompanySettings();if(saleId)loadPayments(saleId)},[saleId]);
+ useFocusEffect(React.useCallback(()=>{loadSales().catch(()=>{});loadCompanySettings().catch(()=>{});if(saleId)loadPayments(saleId).catch(()=>{})},[saleId,loadSales,loadCompanySettings,loadPayments]));
 
  const pickScreenshot=async()=>{
    try{
