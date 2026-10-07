@@ -5,12 +5,16 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import {generatePDF} from 'react-native-html-to-pdf';
 import {PAYMENT_METHODS} from '../../app/core/constants';
+import {escapeHtml} from '../../app/core/validation';
 import {useCRMStore} from '../../store/useCRMStore';
 import Button from '../../components/Button';
 import Input from '../../components/Input';
 import Card from '../../components/Card';
 
 const METHODS=PAYMENT_METHODS;
+
+const imageMimeFromUri=(uri)=>{const ext=String(uri||'').split('?')[0].split('.').pop()?.toLowerCase();if(ext==='png')return'image/png';if(ext==='webp')return'image/webp';if(ext==='heic')return'image/heic';return'image/jpeg'};
+const toDataUri=async(uri)=>{if(!uri)return'';const base64=await FileSystem.readAsStringAsync(uri,{encoding:FileSystem.EncodingType.Base64});return`data:${imageMimeFromUri(uri)};base64,${base64}`};
 
 export default function PaymentsScreen({route}){
  const saleId=route.params?.saleId;
@@ -30,7 +34,10 @@ export default function PaymentsScreen({route}){
      if(!asset?.uri){Alert.alert('Screenshot error','Selected image could not be read.');return}
      const dest=FileSystem.documentDirectory+'payments/';
      await FileSystem.makeDirectoryAsync(dest,{intermediates:true});
-     const target=dest+'payment_'+Date.now()+'.jpg';
+     const sourceName=String(asset.fileName||'').trim();
+     const ext=sourceName.includes('.')?sourceName.split('.').pop().toLowerCase():'jpg';
+     const safeExt=/^(jpg|jpeg|png|webp|heic)$/.test(ext)?ext:'jpg';
+     const target=dest+'payment_'+Date.now()+'.'+safeExt;
      await FileSystem.copyAsync({from:asset.uri,to:target});
      setScreenshot(target);
    }catch(e){Alert.alert('Screenshot error',e.message)}
@@ -56,12 +63,17 @@ export default function PaymentsScreen({route}){
     setBusy(true);
     const invoiceNo='INV-'+String(sale.id).padStart(5,'0');
     const company=companySettings||{};
-    const logo=company.logo_uri?`<img src="${company.logo_uri}" style="max-width:180px;max-height:90px"/>`:'';
-    const signature=company.signature_uri?`<div style="margin-top:28px"><img src="${company.signature_uri}" style="max-width:180px;max-height:80px"/><div>Authorized Signature</div></div>`:'';
-    const terms=company.terms||'Thank you for your business.';
-    const businessName=company.name||'Welding Workshop';
-    const owner=company.owner?`<p><b>Owner:</b> ${company.owner}</p>`:'';
-    const html=`<html><body style="font-family:Arial;padding:24px">${logo}<h1>${businessName}</h1>${owner}<p><b>Invoice:</b> ${invoiceNo}</p><p><b>Date:</b> ${sale.date}</p><hr/><h2>${sale.customer_name}</h2><p>${sale.phone||''}</p><table style="width:100%;border-collapse:collapse"><tr><td>Work</td><td>${sale.work_description||'Welding work'}</td></tr><tr><td>Original Amount</td><td>₹${Number(sale.original_amount||sale.amount).toFixed(2)}</td></tr><tr><td>Discount</td><td>₹${Number(sale.discount_amount||0).toFixed(2)}</td></tr><tr><td>Final Sale Amount</td><td>₹${Number(sale.amount).toFixed(2)}</td></tr><tr><td>Paid</td><td>₹${Number(sale.paid_amount).toFixed(2)}</td></tr><tr><td>Pending</td><td>₹${Number(sale.pending_amount).toFixed(2)}</td></tr></table><p><b>Terms:</b> ${terms}</p>${signature}</body></html>`;
+    const logoData=company.logo_uri?await toDataUri(company.logo_uri):'';
+    const signatureData=company.signature_uri?await toDataUri(company.signature_uri):'';
+    const logo=logoData?`<img src="${logoData}" style="max-width:180px;max-height:90px"/>`:'';
+    const signature=signatureData?`<div style="margin-top:28px"><img src="${signatureData}" style="max-width:180px;max-height:80px"/><div>Authorized Signature</div></div>`:'';
+    const terms=escapeHtml(company.terms||'Thank you for your business.');
+    const businessName=escapeHtml(company.name||'Welding Workshop');
+    const owner=company.owner?`<p><b>Owner:</b> ${escapeHtml(company.owner)}</p>`:'';
+    const customerName=escapeHtml(sale.customer_name||'Customer');
+    const customerPhone=escapeHtml(sale.phone||'');
+    const workDescription=escapeHtml(sale.work_description||'Welding work');
+    const html=`<html><body style="font-family:Arial;padding:24px">${logo}<h1>${businessName}</h1>${owner}<p><b>Invoice:</b> ${escapeHtml(invoiceNo)}</p><p><b>Date:</b> ${escapeHtml(sale.date)}</p><hr/><h2>${customerName}</h2><p>${customerPhone}</p><table style="width:100%;border-collapse:collapse"><tr><td>Work</td><td>${workDescription}</td></tr><tr><td>Original Amount</td><td>₹${Number(sale.original_amount||sale.amount).toFixed(2)}</td></tr><tr><td>Discount</td><td>₹${Number(sale.discount_amount||0).toFixed(2)}</td></tr><tr><td>Final Sale Amount</td><td>₹${Number(sale.amount).toFixed(2)}</td></tr><tr><td>Paid</td><td>₹${Number(sale.paid_amount).toFixed(2)}</td></tr><tr><td>Pending</td><td>₹${Number(sale.pending_amount).toFixed(2)}</td></tr></table><p><b>Terms:</b> ${terms}</p>${signature}</body></html>`;
     const result=await generatePDF({html,fileName:invoiceNo});
     if(!result?.filePath)throw new Error('PDF file was not created.');
     const invoiceDir=FileSystem.documentDirectory+'invoices/';

@@ -13,7 +13,7 @@ export default function App(){
  const [error,setError]=useState(null);
  useEffect(()=>{let mounted=true;(async()=>{try{await initDatabase();await seedCompanySettings();if(mounted)setReady(true)}catch(e){if(mounted)setError(e)}})();return()=>{mounted=false}},[]);
  if(error)return <View style={s.center}><Text style={s.error}>Database error</Text><Text>{error.message}</Text></View>;
- if(!ready)return <View style={s.center}><ActivityIndicator color="#111111"/><Text style={s.loading}>Preparing offline database...</Text></View>;
+ if(!ready)return <View style={s.center}><ActivityIndicator color="#ffffff"/><Text style={s.loading}>Preparing offline database...</Text></View>;
  return <NavigationContainer theme={DarkTheme}><AppNavigator/></NavigationContainer>;
 }
 const s=StyleSheet.create({

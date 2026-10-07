@@ -19,6 +19,10 @@ const runAction=async(action,fallback)=>{
   catch(error){throw new Error(normalizeError(error,fallback));}
 };
 
+const refreshAfterMutation=async(...actions)=>{
+  await Promise.all(actions.map(action=>Promise.resolve().then(action).catch(()=>{})));
+};
+
 export const useCRMStore=create((set,get)=>({
   stats:emptyStats,recentActivities:[],salesOverview:[],leadPipeline:[],loading:false,error:null,
   leads:[],customers:[],sales:[],payments:[],reportSummary:{},reportMethods:[],reportMonthly:[],companySettings:{},
@@ -47,22 +51,28 @@ export const useCRMStore=create((set,get)=>({
     const stage=LEAD_STAGES.includes(lead.stages)?lead.stages:'New';
     const followUp=lead.follow_up_date?normalizeDate(lead.follow_up_date):null;
     if(lead.id){
-      await db.runAsync('UPDATE leads SET name=?,phone=?,details=?,source=?,status=?,stages=?,follow_up_date=? WHERE id=?',
+      const result=await db.runAsync('UPDATE leads SET name=?,phone=?,details=?,source=?,status=?,stages=?,follow_up_date=? WHERE id=?',
         [name,phone,String(lead.details||'').trim(),String(lead.source||'').trim(),stage,stage,followUp,lead.id]);
+      if(!result.changes) throw new Error('Lead not found');
     }else{
       await db.runAsync('INSERT INTO leads(name,phone,details,source,status,stages,follow_up_date) VALUES(?,?,?,?,?,?,?)',
         [name,phone,String(lead.details||'').trim(),String(lead.source||'').trim(),stage,stage,followUp]);
     }
-    await get().loadLeads(); await get().refreshDashboard();
+    await refreshAfterMutation(()=>get().loadLeads(),()=>get().refreshDashboard());
   },'Lead save failed'),
-  deleteLead:async(id)=>{
-    const db=await getDatabase(); await db.runAsync('DELETE FROM leads WHERE id=?',[id]); await get().loadLeads(); await get().refreshDashboard();
-  },
+  deleteLead:async(id)=>runAction(async()=>{
+    if(!id) throw new Error('Lead not found');
+    const db=await getDatabase();
+    const result=await db.runAsync('DELETE FROM leads WHERE id=?',[id]);
+    if(!result.changes) throw new Error('Lead not found');
+    await refreshAfterMutation(()=>get().loadLeads(),()=>get().refreshDashboard());
+  },'Lead deletion failed'),
   moveLead:async(id,stage)=>runAction(async()=>{
     if(!id||!LEAD_STAGES.includes(stage)) throw new Error('Invalid lead stage');
     const db=await getDatabase();
-    await db.runAsync('UPDATE leads SET stages=?,status=? WHERE id=?',[stage,stage,id]);
-    await get().loadLeads(); await get().refreshDashboard();
+    const result=await db.runAsync('UPDATE leads SET stages=?,status=? WHERE id=?',[stage,stage,id]);
+    if(!result.changes) throw new Error('Lead not found');
+    await refreshAfterMutation(()=>get().loadLeads(),()=>get().refreshDashboard());
   },'Lead stage update failed'),
   convertLead:async(id)=>{
     const db=await getDatabase();
@@ -79,7 +89,7 @@ export const useCRMStore=create((set,get)=>({
       }
       await txn.runAsync('UPDATE leads SET stages=?,status=? WHERE id=?',['Won','Won',id]);
     });
-    await get().loadLeads(); await get().loadCustomers(); await get().refreshDashboard();
+    await refreshAfterMutation(()=>get().loadLeads(),()=>get().loadCustomers(),()=>get().refreshDashboard());
     return customerId;
   },
   loadCustomers:async()=>{
@@ -116,7 +126,7 @@ export const useCRMStore=create((set,get)=>({
     const finalAmount=Math.round((value-discount)*100)/100;
     const result=await db.runAsync('INSERT INTO sales(customer_id,amount,date,status,paid_amount,pending_amount,work_description,original_amount,discount_amount) VALUES(?,?,?,?,?,?,?,?,?)',
       [customerId,finalAmount,normalizeDate(date),'Pending',0,finalAmount,String(workDescription||'').trim(),value,discount]);
-    await get().loadSales(); await get().loadCustomers(); await get().refreshDashboard();
+    await refreshAfterMutation(()=>get().loadSales(),()=>get().loadCustomers(),()=>get().refreshDashboard());
     return result.lastInsertRowId;
   },'Sale creation failed'),
   addPayment:async({saleId,customerId,amount,method,screenshotUri})=>runAction(async()=>{
@@ -141,7 +151,7 @@ export const useCRMStore=create((set,get)=>({
       await txn.runAsync('UPDATE customers SET total_paid=COALESCE((SELECT SUM(amount) FROM payments WHERE customer_id=?),0),pending_amount=COALESCE((SELECT SUM(pending_amount) FROM sales WHERE customer_id=?),0) WHERE id=?',
         [customerId,customerId,customerId]);
     });
-    await get().loadSales(); await get().loadCustomers(); await get().refreshDashboard(); await get().loadPayments(saleId);
+    await refreshAfterMutation(()=>get().loadSales(),()=>get().loadCustomers(),()=>get().refreshDashboard(),()=>get().loadPayments(saleId));
   },'Payment could not be saved'),
   saveInvoice:async({saleId,invoiceNo,pdfPath,date})=>runAction(async()=>{
     if(!saleId||!invoiceNo) throw new Error('Sale and invoice number are required');
@@ -187,18 +197,20 @@ export const useCRMStore=create((set,get)=>({
     ]);
     return {sales:sales||[],payments:payments||[],invoices:invoices||[]};
   },
-  deleteCustomer:async(id)=>{
+  deleteCustomer:async(id)=>runAction(async()=>{
     if(!id) throw new Error('Customer not found');
     const db=await getDatabase();
-    await db.runAsync('DELETE FROM customers WHERE id=?',[id]);
-    await get().loadCustomers(); await get().loadSales(); await get().refreshDashboard();
-  },
-  deleteSale:async(id)=>{
+    const result=await db.runAsync('DELETE FROM customers WHERE id=?',[id]);
+    if(!result.changes) throw new Error('Customer not found');
+    await refreshAfterMutation(()=>get().loadCustomers(),()=>get().loadSales(),()=>get().refreshDashboard());
+  },'Customer deletion failed'),
+  deleteSale:async(id)=>runAction(async()=>{
     if(!id) throw new Error('Sale not found');
     const db=await getDatabase();
-    await db.runAsync('DELETE FROM sales WHERE id=?',[id]);
-    await get().loadSales(); await get().loadCustomers(); await get().refreshDashboard();
-  },
+    const result=await db.runAsync('DELETE FROM sales WHERE id=?',[id]);
+    if(!result.changes) throw new Error('Sale not found');
+    await refreshAfterMutation(()=>get().loadSales(),()=>get().loadCustomers(),()=>get().refreshDashboard());
+  },'Sale deletion failed'),
   deletePayment:async(id)=>{
     if(!id) throw new Error('Payment not found');
     const db=await getDatabase();
@@ -214,7 +226,7 @@ export const useCRMStore=create((set,get)=>({
       }
       await txn.runAsync('UPDATE customers SET total_paid=COALESCE((SELECT SUM(amount) FROM payments WHERE customer_id=?),0),pending_amount=COALESCE((SELECT SUM(pending_amount) FROM sales WHERE customer_id=?),0) WHERE id=?',[payment.customer_id,payment.customer_id,payment.customer_id]);
     });
-    await get().loadSales(); await get().loadCustomers(); await get().refreshDashboard();
+    await refreshAfterMutation(()=>get().loadSales(),()=>get().loadCustomers(),()=>get().refreshDashboard());
   },
   loadCompanySettings:async()=>{
     const db=await getDatabase();
