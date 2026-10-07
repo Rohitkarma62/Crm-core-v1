@@ -61,4 +61,42 @@ export const useCRMStore=create((set,get)=>({
       FROM customers c LEFT JOIN sales s ON s.customer_id=c.id GROUP BY c.id ORDER BY c.id DESC`);
     set({customers:rows||[]}); return rows||[];
   }
+  loadSales:async()=>{
+    const db=await getDatabase();
+    const rows=await db.getAllAsync(`SELECT s.*,c.name customer_name,c.phone FROM sales s JOIN customers c ON c.id=s.customer_id ORDER BY s.date DESC,s.id DESC`);
+    set({sales:rows||[]}); return rows||[];
+  },
+  loadPayments:async(saleId)=>{
+    const db=await getDatabase();
+    const rows=await db.getAllAsync(`SELECT p.*,c.name customer_name FROM payments p JOIN customers c ON c.id=p.customer_id WHERE p.sale_id=? ORDER BY p.date DESC,p.id DESC`,[saleId]);
+    set({payments:rows||[]}); return rows||[];
+  },
+  createSale:async({customerId,amount,date})=>{
+    const value=Number(amount);
+    if(!customerId||!Number.isFinite(value)||value<=0) throw new Error('Valid customer and sale amount required');
+    const db=await getDatabase();
+    const result=await db.runAsync('INSERT INTO sales(customer_id,amount,date,status,paid_amount,pending_amount) VALUES(?,?,?,?,?,?)',[customerId,value,date||new Date().toISOString(),'Pending',0,value]);
+    await get().loadSales(); await get().loadCustomers(); await get().refreshDashboard();
+    return result.lastInsertRowId;
+  },
+  addPayment:async({saleId,customerId,amount,method,screenshotUri})=>{
+    const value=Number(amount);
+    if(!saleId||!customerId||!Number.isFinite(value)||value<=0) throw new Error('Valid payment required');
+    const db=await getDatabase();
+    const sale=await db.getFirstAsync('SELECT amount,paid_amount FROM sales WHERE id=?',[saleId]);
+    if(!sale) throw new Error('Sale not found');
+    const remaining=Number(sale.amount)-Number(sale.paid_amount||0);
+    if(value>remaining+0.0001) throw new Error('Payment pending amount se zyada nahi ho sakta');
+    await db.runAsync('INSERT INTO payments(sale_id,customer_id,amount,method,screenshot_uri,date) VALUES(?,?,?,?,?,?)',[saleId,customerId,value,method,screenshotUri||null,new Date().toISOString()]);
+    const paid=Number(sale.paid_amount||0)+value;
+    const pending=Math.max(0,Number(sale.amount)-paid);
+    const status=pending<=0.0001?'Paid':'Pending';
+    await db.runAsync('UPDATE sales SET paid_amount=?,pending_amount=?,status=? WHERE id=?',[paid,pending,status,saleId]);
+    await db.runAsync('UPDATE customers SET total_paid=COALESCE((SELECT SUM(amount) FROM payments WHERE customer_id=?),0),pending_amount=COALESCE((SELECT SUM(pending_amount) FROM sales WHERE customer_id=?),0) WHERE id=?',[customerId,customerId,customerId]);
+    await get().loadSales(); await get().loadCustomers(); await get().refreshDashboard(); await get().loadPayments(saleId);
+  },
+  saveInvoice:async({saleId,invoiceNo,pdfPath,date})=>{
+    const db=await getDatabase();
+    await db.runAsync('INSERT OR REPLACE INTO invoices(sale_id,invoice_no,pdf_path,date) VALUES(?,?,?,?)',[saleId,invoiceNo,pdfPath||null,date||new Date().toISOString()]);
+  }
 }));

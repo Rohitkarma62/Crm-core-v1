@@ -1,0 +1,59 @@
+import React,{useEffect,useState} from 'react';
+import {Alert,Image,SafeAreaView,ScrollView,StyleSheet,Text,View} from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
+import RNHTMLtoPDF from 'react-native-html-to-pdf';
+import {useCRMStore} from '../../store/useCRMStore';
+import Button from '../../components/Button';
+import Input from '../../components/Input';
+import Card from '../../components/Card';
+
+const METHODS=['Cash','UPI','Card','Cheque'];
+
+export default function PaymentsScreen({route}){
+ const saleId=route.params?.saleId;
+ const {sales,loadSales,payments,loadPayments,addPayment,saveInvoice}=useCRMStore();
+ const sale=sales.find(x=>Number(x.id)===Number(saleId));
+ const [amount,setAmount]=useState(''),[method,setMethod]=useState('Cash'),[screenshot,setScreenshot]=useState(null),[busy,setBusy]=useState(false);
+ useEffect(()=>{loadSales();if(saleId)loadPayments(saleId)},[saleId]);
+ const pickScreenshot=async()=>{
+   const permission=await ImagePicker.requestMediaLibraryPermissionsAsync();
+   if(!permission.granted){Alert.alert('Permission required','Gallery permission is required for the UPI/payment screenshot.');return}
+   const result=await ImagePicker.launchImageLibraryAsync({mediaTypes:['images'],quality:.8});
+   if(result.canceled)return;
+   const asset=result.assets[0];
+   const dest=FileSystem.documentDirectory+'payments/';
+   await FileSystem.makeDirectoryAsync(dest,{intermediates:true});
+   const target=dest+'payment_'+Date.now()+'.jpg';
+   await FileSystem.copyAsync({from:asset.uri,to:target});
+   setScreenshot(target);
+ };
+ const pay=async()=>{
+   try{setBusy(true);await addPayment({saleId,customerId:sale.customer_id,amount,method,screenshotUri:screenshot});setAmount('');setScreenshot(null);Alert.alert('Success','Payment saved offline.')}catch(e){Alert.alert('Payment error',e.message)}finally{setBusy(false)}
+ };
+ const invoice=async()=>{
+   if(!sale)return;
+   try{
+    setBusy(true);
+    const invoiceNo='INV-'+String(sale.id).padStart(5,'0');
+    const html=`<html><body style="font-family:Arial;padding:24px"><h1>Welding Workshop Invoice</h1><p><b>Invoice:</b> ${invoiceNo}</p><p><b>Date:</b> ${sale.date}</p><hr/><h2>${sale.customer_name}</h2><p>${sale.phone||''}</p><table style="width:100%;border-collapse:collapse"><tr><td>Sale Amount</td><td>₹${Number(sale.amount).toFixed(2)}</td></tr><tr><td>Paid</td><td>₹${Number(sale.paid_amount).toFixed(2)}</td></tr><tr><td>Pending</td><td>₹${Number(sale.pending_amount).toFixed(2)}</td></tr></table><p>Thank you for your business.</p></body></html>`;
+    const result=await RNHTMLtoPDF.convert({html,fileName:invoiceNo,directory:'Documents'});
+    await saveInvoice({saleId,invoiceNo,pdfPath:result.filePath});
+    Alert.alert('Invoice created',result.filePath||'PDF saved locally');
+   }catch(e){Alert.alert('Invoice error',e.message)}finally{setBusy(false)}
+ };
+ if(!sale)return <SafeAreaView style={styles.safe}><Text>Sale not found.</Text></SafeAreaView>;
+ return <SafeAreaView style={styles.safe}><ScrollView>
+  <Card title={sale.customer_name} subtitle={sale.phone}><Text>Sale: ₹{Number(sale.amount).toFixed(2)}</Text><Text style={styles.line}>Paid: ₹{Number(sale.paid_amount).toFixed(2)}</Text><Text style={styles.line}>Pending: ₹{Number(sale.pending_amount).toFixed(2)}</Text></Card>
+  <Card title="Add Payment">
+   <Input label="Amount" value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="Payment amount"/>
+   <Text style={styles.label}>Method</Text><View style={styles.row}>{METHODS.map(x=><Button key={x} title={x} variant={method===x?'primary':'secondary'} onPress={()=>setMethod(x)}/>)}</View>
+   <Button title={screenshot?'Screenshot attached':'Attach payment screenshot'} variant="secondary" onPress={pickScreenshot}/>
+   {screenshot&&<Image source={{uri:screenshot}} style={styles.image}/>}
+   <Button title="Save Payment" loading={busy} onPress={pay}/>
+  </Card>
+  <Card title="Invoice"><Button title="Generate Offline PDF Invoice" loading={busy} onPress={invoice}/></Card>
+  <Card title="Payment History">{payments.map(p=><View key={p.id} style={styles.history}><Text>₹{Number(p.amount).toFixed(2)} • {p.method}</Text><Text style={styles.muted}>{p.date}</Text>{p.screenshot_uri&&<Text style={styles.muted}>Screenshot saved locally</Text>}</View>)}</Card>
+ </ScrollView></SafeAreaView>
+}
+const styles=StyleSheet.create({safe:{flex:1,backgroundColor:'#f5f7fb',padding:12},line:{marginTop:6},label:{fontWeight:'700',marginBottom:7},row:{flexDirection:'row',flexWrap:'wrap',gap:6},image:{width:'100%',height:180,marginTop:8,borderRadius:10},history:{paddingVertical:9,borderBottomWidth:1,borderBottomColor:'#e2e8f0'},muted:{color:'#64748b',fontSize:12,marginTop:3}});
