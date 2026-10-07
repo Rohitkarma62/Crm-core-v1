@@ -1,5 +1,5 @@
 import React,{useEffect,useState} from 'react';
-import {Alert,Image,SafeAreaView,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Alert,Image,SafeAreaView,ScrollView,StyleSheet,Text,View,Linking} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import RNHTMLtoPDF from 'react-native-html-to-pdf';
@@ -31,6 +31,14 @@ export default function PaymentsScreen({route}){
  const pay=async()=>{
    try{setBusy(true);await addPayment({saleId,customerId:sale.customer_id,amount,method,screenshotUri:screenshot});setAmount('');setScreenshot(null);Alert.alert('Success','Payment saved offline.')}catch(e){Alert.alert('Payment error',e.message)}finally{setBusy(false)}
  };
+ const whatsapp=async()=>{
+  if(!sale?.phone){Alert.alert('WhatsApp','Customer phone number unavailable.');return}
+  const text=encodeURIComponent(`Hello ${sale.customer_name}, your welding workshop invoice is ₹${Number(sale.amount).toFixed(2)}. Paid ₹${Number(sale.paid_amount).toFixed(2)}, pending ₹${Number(sale.pending_amount).toFixed(2)}.`);
+  const url='whatsapp://send?phone='+encodeURIComponent(sale.phone)+'&text='+text;
+  const supported=await Linking.canOpenURL(url);
+  if(!supported){Alert.alert('WhatsApp not available','WhatsApp app is not installed or cannot handle this link.');return}
+  await Linking.openURL(url);
+};
  const invoice=async()=>{
    if(!sale)return;
    try{
@@ -52,7 +60,7 @@ export default function PaymentsScreen({route}){
    {screenshot&&<Image source={{uri:screenshot}} style={styles.image}/>}
    <Button title="Save Payment" loading={busy} onPress={pay}/>
   </Card>
-  <Card title="Invoice"><Button title="Generate Offline PDF Invoice" loading={busy} onPress={invoice}/></Card>
+  <Card title="Invoice"><Button title="Generate Offline PDF Invoice" loading={busy} onPress={invoice}/><Button title="Send Payment Summary on WhatsApp" variant="secondary" onPress={whatsapp}/></Card>
   <Card title="Payment History">{payments.map(p=><View key={p.id} style={styles.history}><Text>₹{Number(p.amount).toFixed(2)} • {p.method}</Text><Text style={styles.muted}>{p.date}</Text>{p.screenshot_uri&&<Text style={styles.muted}>Screenshot saved locally</Text>}</View>)}</Card>
  </ScrollView></SafeAreaView>
 }
