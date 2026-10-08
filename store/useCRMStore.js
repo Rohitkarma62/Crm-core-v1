@@ -225,17 +225,23 @@ export const useCRMStore=create((set,get)=>({
   deleteSale:async(id)=>runAction(async()=>{
     if(!id) throw new Error('Sale not found');
     const db=await getDatabase();
+    const files=await db.getAllAsync(
+      'SELECT screenshot_uri path FROM payments WHERE sale_id=? AND screenshot_uri IS NOT NULL UNION ALL SELECT pdf_path path FROM invoices WHERE sale_id=? AND pdf_path IS NOT NULL',
+      [id,id]
+    );
     const result=await db.runAsync('DELETE FROM sales WHERE id=?',[id]);
     if(!result.changes) throw new Error('Sale not found');
+    await deleteLocalFiles(files?.map(x=>x.path));
     await refreshAfterMutation(()=>get().loadSales(),()=>get().loadCustomers(),()=>get().refreshDashboard());
   },'Sale deletion failed'),
-  deletePayment:async(id)=>{
+  deletePayment:async(id)=>runAction(async()=>{
     if(!id) throw new Error('Payment not found');
     const db=await getDatabase();
-    const payment=await db.getFirstAsync('SELECT sale_id,customer_id FROM payments WHERE id=?',[id]);
+    const payment=await db.getFirstAsync('SELECT sale_id,customer_id,screenshot_uri FROM payments WHERE id=?',[id]);
     if(!payment) throw new Error('Payment not found');
     await db.withExclusiveTransactionAsync(async(txn)=>{
-      await txn.runAsync('DELETE FROM payments WHERE id=?',[id]);
+      const result=await txn.runAsync('DELETE FROM payments WHERE id=?',[id]);
+      if(!result.changes) throw new Error('Payment not found');
       const sale=await txn.getFirstAsync('SELECT amount FROM sales WHERE id=?',[payment.sale_id]);
       if(sale){
         const paidRow=await txn.getFirstAsync('SELECT COALESCE(SUM(amount),0) paid FROM payments WHERE sale_id=?',[payment.sale_id]);
@@ -244,8 +250,9 @@ export const useCRMStore=create((set,get)=>({
       }
       await txn.runAsync('UPDATE customers SET total_paid=COALESCE((SELECT SUM(amount) FROM payments WHERE customer_id=?),0),pending_amount=COALESCE((SELECT SUM(pending_amount) FROM sales WHERE customer_id=?),0) WHERE id=?',[payment.customer_id,payment.customer_id,payment.customer_id]);
     });
+    await deleteLocalFiles([payment.screenshot_uri]);
     await refreshAfterMutation(()=>get().loadSales(),()=>get().loadCustomers(),()=>get().refreshDashboard());
-  },
+  },'Payment deletion failed'),
   loadCompanySettings:async()=>{
     const db=await getDatabase();
     const row=await db.getFirstAsync('SELECT * FROM company_settings LIMIT 1');
