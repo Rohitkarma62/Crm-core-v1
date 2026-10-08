@@ -1,6 +1,5 @@
 import * as SQLite from 'expo-sqlite';
 
-const SCHEMA_VERSION=3;
 let databasePromise;
 
 export const getDatabase=()=>{
