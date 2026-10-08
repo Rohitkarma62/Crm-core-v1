@@ -1,11 +1,26 @@
 {
-  "expo":{
-    "name":"Vishwakarma Fabrication",
-    "slug":"vishwakarma-fabrication",
-    "version":"1.0.2",
-    "orientation":"portrait",
-    "newArchEnabled":false,
-    "android":{"package":"com.weldingworkshop.crm","versionCode":3},
-    "assetBundlePatterns":["**/*"]
+  "expo": {
+    "name": "Vishwakarma Fabrication",
+    "slug": "vishwakarma-fabrication",
+    "version": "1.0.2",
+    "orientation": "portrait",
+    "newArchEnabled": false,
+    "android": {
+      "package": "com.weldingworkshop.crm",
+      "versionCode": 3
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "plugins": [
+      [
+        "react-native-share",
+        {
+          "android": [
+            "com.whatsapp"
+          ]
+        }
+      ]
+    ]
   }
 }
