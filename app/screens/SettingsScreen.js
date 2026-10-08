@@ -7,7 +7,7 @@ import{colors,spacing,typography}from'../../theme';
 import{exportCRMBackup,importCRMBackup}from'../core/backup';
 
 export default function SettingsScreen(){
- const{loadCompanySettings,loadLeads,loadCustomers,loadSales,refreshDashboard,loadReports}=useCRMStore();
+ const{loadCompanySettings,saveCompanySettings,loadLeads,loadCustomers,loadSales,refreshDashboard,loadReports}=useCRMStore();
  const[d,setD]=useState({name:'',owner:'',logo_uri:'',signature_uri:'',terms:''});
  useFocusEffect(React.useCallback(()=>{loadCompanySettings().then(x=>x&&setD(x)).catch(()=>{})},[loadCompanySettings]));
  const pick=async field=>{try{const p=await ImagePicker.requestMediaLibraryPermissionsAsync();if(!p.granted){Alert.alert('Permission required','Gallery permission required.');return}const r=await ImagePicker.launchImageLibraryAsync({mediaTypes:['images'],quality:.85});if(r.canceled)return;const asset=r.assets?.[0];if(!asset?.uri)throw new Error('Selected image could not be read.');const dest=FileSystem.documentDirectory+'company/';await FileSystem.makeDirectoryAsync(dest,{intermediates:true});const rawExt=String(asset.fileName||'').split('.').pop()?.toLowerCase()||'jpg';const ext=/^(jpg|jpeg|png|webp|heic)$/.test(rawExt)?rawExt:'jpg';const target=dest+field+'_'+Date.now()+'.'+ext;await FileSystem.copyAsync({from:asset.uri,to:target});setD(x=>({...x,[field]:target}))}catch(e){Alert.alert('Image error',e.message)}};
