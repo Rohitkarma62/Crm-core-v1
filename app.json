@@ -1,11 +1,11 @@
 {
   "expo":{
-    "name":"Welding Workshop CRM",
-    "slug":"welding-workshop-crm",
-    "version":"1.0.1",
+    "name":"Vishwakarma Fabrication",
+    "slug":"vishwakarma-fabrication",
+    "version":"1.0.2",
     "orientation":"portrait",
     "newArchEnabled":false,
-    "android":{"package":"com.weldingworkshop.crm","versionCode":2},
+    "android":{"package":"com.weldingworkshop.crm","versionCode":3},
     "assetBundlePatterns":["**/*"]
   }
 }
