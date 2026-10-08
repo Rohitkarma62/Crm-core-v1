@@ -1,4 +1,3 @@
-import React from 'react';
 import {Pressable,SafeAreaView,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {colors,spacing,typography,radius} from '../../theme';
 
