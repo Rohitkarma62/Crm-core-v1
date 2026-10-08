@@ -162,17 +162,38 @@ export default function PaymentsScreen({route}){
    if(!(await FileSystem.getInfoAsync(path)).exists){Alert.alert('Invoice image not found','Generate the invoice image first.');return}
    await exportInvoice(path,invoiceNo+'.png','image/png');
   }}/><Button title="Send Payment Summary on WhatsApp" variant="secondary" onPress={whatsapp}/></Card>
-  <View ref={invoiceViewRef} collapsable={false} style={styles.invoiceCapture}><Text style={styles.invoiceBrand}>{companySettings?.name||'Welding Workshop'}</Text>{!!companySettings?.owner&&<Text style={styles.invoiceMuted}>Owner: {companySettings.owner}</Text>}<Text style={styles.invoiceHeading}>INVOICE</Text><Text style={styles.invoiceText}>Invoice: INV-{String((invoiceData||sale)?.id||'').padStart(5,'0')}</Text><Text style={styles.invoiceText}>Customer: {(invoiceData||sale)?.customer_name||''}</Text><Text style={styles.invoiceText}>Phone: {(invoiceData||sale)?.phone||''}</Text><Text style={styles.invoiceText}>Work: {(invoiceData||sale)?.work_description||'Welding work'}</Text><Text style={styles.invoiceText}>Original: ₹{Number((invoiceData||sale)?.original_amount||(invoiceData||sale)?.amount||0).toFixed(2)}</Text><Text style={styles.invoiceText}>Discount: ₹{Number((invoiceData||sale)?.discount_amount||0).toFixed(2)}</Text><Text style={styles.invoiceTotal}>Final: ₹{Number((invoiceData||sale)?.amount||0).toFixed(2)}</Text><Text style={styles.invoiceText}>Paid: ₹{Number((invoiceData||sale)?.paid_amount||0).toFixed(2)}</Text><Text style={styles.invoiceText}>Pending: ₹{Number((invoiceData||sale)?.pending_amount||0).toFixed(2)}</Text><Text style={styles.invoiceMuted}>Thank you for your business.</Text></View>
+  <View ref={invoiceViewRef} collapsable={false} style={styles.invoiceCapture}>
+   <View style={styles.invoiceTop}>
+    <View style={styles.invoiceBusiness}>
+     <View style={styles.invoiceLogo}><Text style={styles.invoiceLogoText}>VF</Text></View>
+     <View><Text style={styles.invoiceBrand}>{companySettings?.name||'Welding Workshop'}</Text>{!!companySettings?.owner&&<Text style={styles.invoiceMuted}>Owner: {companySettings.owner}</Text>}</View>
+    </View>
+    <View style={styles.invoiceMeta}><Text style={styles.invoiceHeading}>INVOICE</Text><Text style={styles.invoiceMetaText}>No. INV-{String((invoiceData||sale)?.id||'').padStart(5,'0')}</Text><Text style={styles.invoiceMetaText}>Date: {(invoiceData||sale)?.date||''}</Text></View>
+   </View>
+   <View style={styles.invoiceDivider}/>
+   <View style={styles.billRow}><View><Text style={styles.invoiceLabel}>BILL TO</Text><Text style={styles.invoiceCustomer}>{(invoiceData||sale)?.customer_name||''}</Text><Text style={styles.invoiceMuted}>{(invoiceData||sale)?.phone||''}</Text></View><View style={styles.statusBadge}><Text style={styles.statusText}>{Number((invoiceData||sale)?.pending_amount||0)>0?'PAYMENT PENDING':'PAID'}</Text></View></View>
+   <View style={styles.invoiceTableHeader}><Text style={styles.tableDescription}>DESCRIPTION</Text><Text style={styles.tableAmount}>AMOUNT</Text></View>
+   <View style={styles.invoiceTableRow}><View style={styles.tableDescription}><Text style={styles.invoiceText}>{(invoiceData||sale)?.work_description||'Welding work'}</Text><Text style={styles.invoiceMuted}>Workshop service</Text></View><Text style={styles.tableAmount}>₹{Number((invoiceData||sale)?.original_amount||(invoiceData||sale)?.amount||0).toFixed(2)}</Text></View>
+   <View style={styles.invoiceTotals}><Text style={styles.totalLabel}>Subtotal</Text><Text style={styles.totalValue}>₹{Number((invoiceData||sale)?.original_amount||(invoiceData||sale)?.amount||0).toFixed(2)}</Text><Text style={styles.totalLabel}>Discount</Text><Text style={styles.totalValue}>- ₹{Number((invoiceData||sale)?.discount_amount||0).toFixed(2)}</Text><Text style={styles.grandLabel}>GRAND TOTAL</Text><Text style={styles.grandValue}>₹{Number((invoiceData||sale)?.amount||0).toFixed(2)}</Text><Text style={styles.totalLabel}>Paid</Text><Text style={styles.totalValue}>₹{Number((invoiceData||sale)?.paid_amount||0).toFixed(2)}</Text><Text style={styles.balanceLabel}>BALANCE DUE</Text><Text style={styles.balanceValue}>₹{Number((invoiceData||sale)?.pending_amount||0).toFixed(2)}</Text></View>
+   <View style={styles.invoiceNote}><Text style={styles.noteTitle}>TERMS & NOTES</Text><Text style={styles.noteText}>{companySettings?.terms||'Thank you for your business.'}</Text></View>
+   <View style={styles.invoiceFooter}><Text style={styles.invoiceMuted}>Computer-generated invoice • Thank you for your business</Text></View>
+  </View>
   <Card title="Payment History">{payments.map(p=><View key={p.id} style={styles.history}><Text>₹{Number(p.amount).toFixed(2)} • {p.method}</Text><Text style={styles.muted}>{p.date}</Text>{p.screenshot_uri&&<Text style={styles.muted}>Screenshot saved locally</Text>}</View>)}</Card>
  </ScrollView></SafeAreaView>
 }
 
 const styles=StyleSheet.create({
  safe:{flex:1,backgroundColor:'#000000',padding:12},
- line:{marginTop:6},
- label:{fontWeight:'700',marginBottom:7},
- row:{flexDirection:'row',flexWrap:'wrap',gap:6},
- image:{width:'100%',height:180,marginTop:8,borderRadius:10},
- history:{paddingVertical:9,borderBottomWidth:1,borderBottomColor:'#444444'},
- muted:{color:'#ffffff',fontSize:12,marginTop:3},invoiceCapture:{backgroundColor:'#FFFFFF',padding:24,marginTop:12,borderRadius:8},invoiceBrand:{fontSize:24,fontWeight:'800',color:'#111111'},invoiceHeading:{fontSize:20,fontWeight:'800',color:'#111111',marginTop:16},invoiceText:{fontSize:14,color:'#111111',marginTop:8},invoiceTotal:{fontSize:18,fontWeight:'800',color:'#111111',marginTop:12},invoiceMuted:{fontSize:12,color:'#555555',marginTop:8}
-});
+ line:{marginTop:6},label:{fontWeight:'700',marginBottom:7},row:{flexDirection:'row',flexWrap:'wrap',gap:6},
+ image:{width:'100%',height:180,marginTop:8,borderRadius:10},history:{paddingVertical:9,borderBottomWidth:1,borderBottomColor:'#444444'},muted:{color:'#ffffff',fontSize:12,marginTop:3},
+ invoiceCapture:{backgroundColor:'#FFFFFF',padding:26,marginTop:12,borderRadius:10},
+ invoiceTop:{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start'},invoiceBusiness:{flexDirection:'row',alignItems:'center',gap:10,flex:1},
+ invoiceLogo:{width:52,height:52,borderRadius:8,borderWidth:2,borderColor:'#111111',alignItems:'center',justifyContent:'center'},invoiceLogoText:{fontSize:20,fontWeight:'900',color:'#111111'},
+ invoiceBrand:{fontSize:20,fontWeight:'900',color:'#111111',maxWidth:190},invoiceHeading:{fontSize:24,fontWeight:'900',letterSpacing:2,color:'#111111',textAlign:'right'},invoiceMeta:{alignItems:'flex-end'},invoiceMetaText:{fontSize:11,color:'#555555',marginTop:3},
+ invoiceDivider:{height:2,backgroundColor:'#111111',marginVertical:18},billRow:{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start'},invoiceLabel:{fontSize:9,fontWeight:'800',letterSpacing:1.2,color:'#777777'},invoiceCustomer:{fontSize:15,fontWeight:'800',color:'#111111',marginTop:4},
+ statusBadge:{borderWidth:1,borderColor:'#111111',paddingHorizontal:9,paddingVertical:5,borderRadius:4},statusText:{fontSize:9,fontWeight:'900',color:'#111111'},
+ invoiceTableHeader:{flexDirection:'row',backgroundColor:'#111111',paddingVertical:9,paddingHorizontal:10,marginTop:20},tableDescription:{flex:1,fontSize:10,fontWeight:'800',color:'#FFFFFF',letterSpacing:.5},tableAmount:{width:100,fontSize:10,fontWeight:'800',color:'#FFFFFF',textAlign:'right'},
+ invoiceTableRow:{flexDirection:'row',paddingVertical:14,paddingHorizontal:10,borderBottomWidth:1,borderBottomColor:'#DDDDDD'},invoiceText:{fontSize:13,color:'#111111',marginTop:3},invoiceMuted:{fontSize:10,color:'#666666',marginTop:3},
+ invoiceTotals:{alignSelf:'flex-end',width:230,marginTop:14},totalLabel:{fontSize:11,color:'#666666',marginTop:5},totalValue:{fontSize:11,color:'#111111',textAlign:'right',marginTop:-14},grandLabel:{fontSize:12,fontWeight:'900',color:'#111111',borderTopWidth:2,borderTopColor:'#111111',paddingTop:9,marginTop:9},grandValue:{fontSize:16,fontWeight:'900',color:'#111111',textAlign:'right',marginTop:-18},balanceLabel:{fontSize:12,fontWeight:'900',color:'#111111',marginTop:10},balanceValue:{fontSize:13,fontWeight:'900',color:'#111111',textAlign:'right',marginTop:-18},
+ invoiceNote:{marginTop:20,padding:12,backgroundColor:'#F4F4F4',borderLeftWidth:3,borderLeftColor:'#111111'},noteTitle:{fontSize:9,fontWeight:'900',letterSpacing:1,color:'#333333'},noteText:{fontSize:10,color:'#555555',marginTop:5},invoiceFooter:{marginTop:20,paddingTop:10,borderTopWidth:1,borderTopColor:'#DDDDDD',alignItems:'center'}
+});;
