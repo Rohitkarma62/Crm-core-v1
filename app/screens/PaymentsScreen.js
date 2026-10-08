@@ -64,10 +64,7 @@ export default function PaymentsScreen({route}){
        setScreenshot(null);
      }
      Alert.alert('Payment error',e.message);
-   }finally{
-    if(generatedPdfPath&&generatedPdfPath!==target)await FileSystem.deleteAsync(generatedPdfPath,{idempotent:true}).catch(()=>{});
-    setBusy(false)
-   }
+   }finally{setBusy(false)}
  };
 
  const whatsapp=async()=>{
@@ -129,7 +126,10 @@ export default function PaymentsScreen({route}){
    }catch(e){
     if(targetCreated){try{await FileSystem.deleteAsync(target,{idempotent:true})}catch{}}
     Alert.alert('Invoice error',e.message)
-   }finally{setBusy(false)}
+   }finally{
+    if(generatedPdfPath&&generatedPdfPath!==target)await FileSystem.deleteAsync(generatedPdfPath,{idempotent:true}).catch(()=>{});
+    setBusy(false)
+   }
  };
 
  if(!sale)return <SafeAreaView style={styles.safe}><Text>Sale not found.</Text></SafeAreaView>;
