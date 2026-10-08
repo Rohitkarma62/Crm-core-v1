@@ -40,8 +40,8 @@ export const useCRMStore=create((set,get)=>({
       const [counts,recent,salesOverview,pipeline]=await Promise.all([
         db.getFirstAsync(`SELECT (SELECT COUNT(*) FROM leads) leads,(SELECT COUNT(*) FROM customers) customers,(SELECT COUNT(*) FROM sales) sales,COALESCE((SELECT SUM(amount) FROM sales),0) revenue,COALESCE((SELECT SUM(amount) FROM payments),0) collection,COALESCE((SELECT SUM(pending_amount) FROM sales),0) pending`),
         db.getAllAsync(`SELECT 'Payment' type,amount,date FROM payments UNION ALL SELECT 'Sale' type,amount,date FROM sales ORDER BY date DESC LIMIT 8`),
-        db.getAllAsync(`SELECT date,COALESCE(SUM(amount),0) amount FROM sales GROUP BY date ORDER BY date DESC LIMIT 7`),
-        db.getAllAsync(`SELECT stages stage,COUNT(*) count FROM leads GROUP BY stages ORDER BY count DESC`)
+        db.getAllAsync(`SELECT substr(date,1,10) date,COALESCE(SUM(amount),0) amount FROM sales GROUP BY substr(date,1,10) ORDER BY date DESC LIMIT 7`),
+        db.getAllAsync(`SELECT stages stage,COUNT(*) count FROM leads WHERE stages NOT IN ('Won','Lost') GROUP BY stages ORDER BY count DESC`)
       ]);
       set({stats:normalizeStats(counts),recentActivities:recent||[],salesOverview:salesOverview||[],leadPipeline:pipeline||[],loading:false});
     }catch(error){set({error:error?.message||'Dashboard load failed',loading:false});}
@@ -173,6 +173,8 @@ export const useCRMStore=create((set,get)=>({
     const db=await getDatabase();
     const sale=await db.getFirstAsync('SELECT id FROM sales WHERE id=?',[saleId]);
     if(!sale) throw new Error('Sale not found');
+    const existingInvoice=await db.getFirstAsync('SELECT sale_id FROM invoices WHERE invoice_no=?',[invoiceNo]);
+    if(existingInvoice&&Number(existingInvoice.sale_id)!==Number(saleId)) throw new Error('Invoice number already belongs to another sale');
     await db.runAsync(`INSERT INTO invoices(sale_id,invoice_no,pdf_path,date)
       VALUES(?,?,?,?)
       ON CONFLICT(invoice_no) DO UPDATE SET sale_id=excluded.sale_id,pdf_path=excluded.pdf_path,date=excluded.date`,
