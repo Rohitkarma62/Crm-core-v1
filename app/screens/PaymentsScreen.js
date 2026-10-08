@@ -6,6 +6,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import {PAYMENT_METHODS} from '../../app/core/constants';
 import {escapeHtml} from '../../app/core/validation';
 import {useCRMStore} from '../../store/useCRMStore';
+import {captureRef} from 'react-native-view-shot';
 import Button from '../../components/Button';
 import Input from '../../components/Input';
 import Card from '../../components/Card';
@@ -19,8 +20,9 @@ export default function PaymentsScreen({route}){
  const saleId=route.params?.saleId;
  const {sales,loadSales,payments,loadPayments,addPayment,saveInvoice,companySettings,loadCompanySettings}=useCRMStore();
  const sale=sales.find(x=>Number(x.id)===Number(saleId));
- const [amount,setAmount]=useState(''),[method,setMethod]=useState('Cash'),[screenshot,setScreenshot]=useState(null),[busy,setBusy]=useState(false);
+ const [amount,setAmount]=useState(''),[method,setMethod]=useState('Cash'),[screenshot,setScreenshot]=useState(null),[busy,setBusy]=useState(false),[invoiceData,setInvoiceData]=useState(null);
  const pendingScreenshot=useRef(null);
+ const invoiceViewRef=useRef(null);
  useEffect(()=>()=>{const path=pendingScreenshot.current;if(path)FileSystem.deleteAsync(path,{idempotent:true}).catch(()=>{})},[]);
 
  useFocusEffect(React.useCallback(()=>{loadSales().catch(()=>{});loadCompanySettings().catch(()=>{});if(saleId)loadPayments(saleId).catch(()=>{})},[saleId,loadSales,loadCompanySettings,loadPayments]));
@@ -50,7 +52,14 @@ export default function PaymentsScreen({route}){
  const pay=async()=>{
    if(!sale||busy)return;
    const attachedScreenshot=screenshot;
-   try{setBusy(true);await addPayment({saleId,customerId:sale.customer_id,amount,method,screenshotUri:attachedScreenshot});setAmount('');pendingScreenshot.current=null;setScreenshot(null);Alert.alert('Success','Payment saved offline.')}catch(e){
+   try{
+     setBusy(true);
+     await addPayment({saleId,customerId:sale.customer_id,amount,method,screenshotUri:attachedScreenshot});
+     setAmount('');pendingScreenshot.current=null;setScreenshot(null);
+     await loadSales();
+     const updatedSale=useCRMStore.getState().sales.find(x=>Number(x.id)===Number(saleId));
+     if(updatedSale) await invoice(updatedSale,true); else Alert.alert('Success','Payment saved offline.');
+   }catch(e){
      if(attachedScreenshot){await FileSystem.deleteAsync(attachedScreenshot,{idempotent:true}).catch(()=>{});if(pendingScreenshot.current===attachedScreenshot)pendingScreenshot.current=null;setScreenshot(null)}
      Alert.alert('Payment error',e.message)
    }finally{setBusy(false)}
@@ -65,24 +74,39 @@ export default function PaymentsScreen({route}){
   try{await Linking.openURL(url)}catch(e){Alert.alert('WhatsApp not available','WhatsApp app is not installed or cannot handle this link.')}
  };
 
- const invoice=async()=>{
-   if(!sale||busy)return;
+ const generateInvoiceImage=async(saleData,showAlert=false)=>{
+   if(!invoiceViewRef.current||!saleData)return;
+   setInvoiceData(saleData);
+   await new Promise(resolve=>setTimeout(resolve,120));
+   const uri=await captureRef(invoiceViewRef.current,{format:'png',quality:1,result:'tmpfile'});
+   const invoiceNo='INV-'+String(saleData.id).padStart(5,'0');
+   const invoiceDir=FileSystem.documentDirectory+'invoices/';
+   await FileSystem.makeDirectoryAsync(invoiceDir,{intermediates:true});
+   const target=invoiceDir+invoiceNo+'.png';
+   await FileSystem.copyAsync({from:uri,to:target});
+   await saveInvoice({saleId:saleData.id,invoiceNo,filePath:target,date:new Date().toISOString()});
+   if(showAlert)Alert.alert('Invoice ready','PDF generation failed, so an invoice image was saved on this device.');
+   return target;
+ };
+
+ const invoice=async(saleData=sale,silent=false)=>{
+   if(!saleData||busy)return;
    let generatedPdfPath=null,backupPath=null,target=null,committed=false;
    try{
-    setBusy(true);
-    const invoiceNo='INV-'+String(sale.id).padStart(5,'0');
+    if(!silent)setBusy(true);
+    const invoiceNo='INV-'+String(saleData.id).padStart(5,'0');
     const company=companySettings||{};
     const logoData=company.logo_uri?await toDataUri(company.logo_uri):'';
     const signatureData=company.signature_uri?await toDataUri(company.signature_uri):'';
-    const logo=logoData?`<img src="${logoData}" style="max-width:180px;max-height:90px"/>`:'';
-    const signature=signatureData?`<div style="margin-top:28px"><img src="${signatureData}" style="max-width:180px;max-height:80px"/><div>Authorized Signature</div></div>`:'';
+    const logo=logoData?'<img src="'+logoData+'" style="max-width:180px;max-height:90px"/>':'';
+    const signature=signatureData?'<div style="margin-top:28px"><img src="'+signatureData+'" style="max-width:180px;max-height:80px"/><div>Authorized Signature</div></div>':'';
     const terms=escapeHtml(company.terms||'Thank you for your business.');
     const businessName=escapeHtml(company.name||'Welding Workshop');
-    const owner=company.owner?`<p><b>Owner:</b> ${escapeHtml(company.owner)}</p>`:'';
-    const customerName=escapeHtml(sale.customer_name||'Customer');
-    const customerPhone=escapeHtml(sale.phone||'');
-    const workDescription=escapeHtml(sale.work_description||'Welding work');
-    const html=`<html><body style="font-family:Arial;padding:24px">${logo}<h1>${businessName}</h1>${owner}<p><b>Invoice:</b> ${escapeHtml(invoiceNo)}</p><p><b>Date:</b> ${escapeHtml(sale.date)}</p><hr/><h2>${customerName}</h2><p>${customerPhone}</p><table style="width:100%;border-collapse:collapse"><tr><td>Work</td><td>${workDescription}</td></tr><tr><td>Original Amount</td><td>₹${Number(sale.original_amount||sale.amount).toFixed(2)}</td></tr><tr><td>Discount</td><td>₹${Number(sale.discount_amount||0).toFixed(2)}</td></tr><tr><td>Final Sale Amount</td><td>₹${Number(sale.amount).toFixed(2)}</td></tr><tr><td>Paid</td><td>₹${Number(sale.paid_amount).toFixed(2)}</td></tr><tr><td>Pending</td><td>₹${Number(sale.pending_amount).toFixed(2)}</td></tr></table><p><b>Terms:</b> ${terms}</p>${signature}</body></html>`;
+    const owner=company.owner?'<p><b>Owner:</b> '+escapeHtml(company.owner)+'</p>':'';
+    const customerName=escapeHtml(saleData.customer_name||'Customer');
+    const customerPhone=escapeHtml(saleData.phone||'');
+    const workDescription=escapeHtml(saleData.work_description||'Welding work');
+    const html='<html><body style="font-family:Arial;padding:24px">'+logo+'<h1>'+businessName+'</h1>'+owner+'<p><b>Invoice:</b> '+escapeHtml(invoiceNo)+'</p><p><b>Date:</b> '+escapeHtml(saleData.date)+'</p><hr/><h2>'+customerName+'</h2><p>'+customerPhone+'</p><table style="width:100%;border-collapse:collapse"><tr><td>Work</td><td>'+workDescription+'</td></tr><tr><td>Original Amount</td><td>₹'+Number(saleData.original_amount||saleData.amount).toFixed(2)+'</td></tr><tr><td>Discount</td><td>₹'+Number(saleData.discount_amount||0).toFixed(2)+'</td></tr><tr><td>Final Sale Amount</td><td>₹'+Number(saleData.amount).toFixed(2)+'</td></tr><tr><td>Paid</td><td>₹'+Number(saleData.paid_amount).toFixed(2)+'</td></tr><tr><td>Pending</td><td>₹'+Number(saleData.pending_amount).toFixed(2)+'</td></tr></table><p><b>Terms:</b> '+terms+'</p>'+signature+'</body></html>';
     const {generatePDF}=require('react-native-html-to-pdf');
     const result=await generatePDF({html,fileName:invoiceNo});
     generatedPdfPath=result?.filePath||null;
@@ -93,19 +117,19 @@ export default function PaymentsScreen({route}){
     const existing=await FileSystem.getInfoAsync(target);
     if(existing.exists){backupPath=invoiceDir+invoiceNo+'.backup_'+Date.now()+'.pdf';await FileSystem.moveAsync({from:target,to:backupPath});}
     await FileSystem.copyAsync({from:generatedPdfPath,to:target});
-    await saveInvoice({saleId,invoiceNo,pdfPath:target,date:new Date().toISOString()});
+    await saveInvoice({saleId:saleData.id,invoiceNo,pdfPath:target,date:new Date().toISOString()});
     committed=true;
     if(backupPath)await FileSystem.deleteAsync(backupPath,{idempotent:true});
-    Alert.alert('Invoice created','PDF saved successfully.');
+    if(!silent)Alert.alert('Invoice created','PDF saved successfully.');
    }catch(e){
      if(!committed){
        if(target)await FileSystem.deleteAsync(target,{idempotent:true}).catch(()=>{});
        if(backupPath)await FileSystem.moveAsync({from:backupPath,to:target}).catch(()=>{});
      }
-     Alert.alert('Invoice error',e.message)
+     try{await generateInvoiceImage(saleData,!silent)}catch(imageError){if(!silent)Alert.alert('Invoice error',e.message+'\nImage fallback also failed: '+imageError.message);}
    }finally{
      if(generatedPdfPath)await FileSystem.deleteAsync(generatedPdfPath,{idempotent:true}).catch(()=>{});
-     setBusy(false)
+     if(!silent)setBusy(false);
    }
  };
 
@@ -119,7 +143,8 @@ export default function PaymentsScreen({route}){
    {screenshot&&<Image source={{uri:screenshot}} style={styles.image}/>}
    <Button title="Save Payment" loading={busy} onPress={pay}/>
   </Card>
-  <Card title="Invoice"><Button title="Generate Offline PDF Invoice" loading={busy} onPress={invoice}/><Button title="Send Payment Summary on WhatsApp" variant="secondary" onPress={whatsapp}/></Card>
+  <Card title="Invoice"><Button title="Generate Offline PDF Invoice" loading={busy} onPress={()=>invoice()}/><Button title="Generate Invoice Image" variant="secondary" loading={busy} onPress={()=>generateInvoiceImage(sale,true)}/><Button title="Send Payment Summary on WhatsApp" variant="secondary" onPress={whatsapp}/></Card>
+  <View ref={invoiceViewRef} collapsable={false} style={styles.invoiceCapture}><Text style={styles.invoiceBrand}>{companySettings?.name||'Welding Workshop'}</Text>{!!companySettings?.owner&&<Text style={styles.invoiceMuted}>Owner: {companySettings.owner}</Text>}<Text style={styles.invoiceHeading}>INVOICE</Text><Text style={styles.invoiceText}>Invoice: INV-{String((invoiceData||sale)?.id||'').padStart(5,'0')}</Text><Text style={styles.invoiceText}>Customer: {(invoiceData||sale)?.customer_name||''}</Text><Text style={styles.invoiceText}>Phone: {(invoiceData||sale)?.phone||''}</Text><Text style={styles.invoiceText}>Work: {(invoiceData||sale)?.work_description||'Welding work'}</Text><Text style={styles.invoiceText}>Original: ₹{Number((invoiceData||sale)?.original_amount||(invoiceData||sale)?.amount||0).toFixed(2)}</Text><Text style={styles.invoiceText}>Discount: ₹{Number((invoiceData||sale)?.discount_amount||0).toFixed(2)}</Text><Text style={styles.invoiceTotal}>Final: ₹{Number((invoiceData||sale)?.amount||0).toFixed(2)}</Text><Text style={styles.invoiceText}>Paid: ₹{Number((invoiceData||sale)?.paid_amount||0).toFixed(2)}</Text><Text style={styles.invoiceText}>Pending: ₹{Number((invoiceData||sale)?.pending_amount||0).toFixed(2)}</Text><Text style={styles.invoiceMuted}>Thank you for your business.</Text></View>
   <Card title="Payment History">{payments.map(p=><View key={p.id} style={styles.history}><Text>₹{Number(p.amount).toFixed(2)} • {p.method}</Text><Text style={styles.muted}>{p.date}</Text>{p.screenshot_uri&&<Text style={styles.muted}>Screenshot saved locally</Text>}</View>)}</Card>
  </ScrollView></SafeAreaView>
 }
@@ -131,5 +156,5 @@ const styles=StyleSheet.create({
  row:{flexDirection:'row',flexWrap:'wrap',gap:6},
  image:{width:'100%',height:180,marginTop:8,borderRadius:10},
  history:{paddingVertical:9,borderBottomWidth:1,borderBottomColor:'#444444'},
- muted:{color:'#ffffff',fontSize:12,marginTop:3}
+ muted:{color:'#ffffff',fontSize:12,marginTop:3},invoiceCapture:{backgroundColor:'#FFFFFF',padding:24,marginTop:12,borderRadius:8},invoiceBrand:{fontSize:24,fontWeight:'800',color:'#111111'},invoiceHeading:{fontSize:20,fontWeight:'800',color:'#111111',marginTop:16},invoiceText:{fontSize:14,color:'#111111',marginTop:8},invoiceTotal:{fontSize:18,fontWeight:'800',color:'#111111',marginTop:12},invoiceMuted:{fontSize:12,color:'#555555',marginTop:8}
 });
