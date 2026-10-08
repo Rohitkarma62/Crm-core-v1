@@ -1,4 +1,4 @@
-import React,{useState} from 'react';
+import React,{useEffect,useRef,useState} from 'react';
 import {useFocusEffect} from '@react-navigation/native';
 import {Alert,Image,SafeAreaView,ScrollView,StyleSheet,Text,View,Linking} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -20,6 +20,8 @@ export default function PaymentsScreen({route}){
  const {sales,loadSales,payments,loadPayments,addPayment,saveInvoice,companySettings,loadCompanySettings}=useCRMStore();
  const sale=sales.find(x=>Number(x.id)===Number(saleId));
  const [amount,setAmount]=useState(''),[method,setMethod]=useState('Cash'),[screenshot,setScreenshot]=useState(null),[busy,setBusy]=useState(false);
+ const pendingScreenshot=useRef(null);
+ useEffect(()=>()=>{const path=pendingScreenshot.current;if(path)FileSystem.deleteAsync(path,{idempotent:true}).catch(()=>{})},[]);
 
  useFocusEffect(React.useCallback(()=>{loadSales().catch(()=>{});loadCompanySettings().catch(()=>{});if(saleId)loadPayments(saleId).catch(()=>{})},[saleId,loadSales,loadCompanySettings,loadPayments]));
 
@@ -38,13 +40,20 @@ export default function PaymentsScreen({route}){
      const safeExt=/^(jpg|jpeg|png|webp|heic)$/.test(ext)?ext:'jpg';
      const target=dest+'payment_'+Date.now()+'.'+safeExt;
      await FileSystem.copyAsync({from:asset.uri,to:target});
+     const previous=pendingScreenshot.current;
+     if(previous&&previous!==target)await FileSystem.deleteAsync(previous,{idempotent:true}).catch(()=>{});
+     pendingScreenshot.current=target;
      setScreenshot(target);
    }catch(e){Alert.alert('Screenshot error',e.message)}
  };
 
  const pay=async()=>{
-   if(!sale)return;
-   try{setBusy(true);await addPayment({saleId,customerId:sale.customer_id,amount,method,screenshotUri:screenshot});setAmount('');setScreenshot(null);Alert.alert('Success','Payment saved offline.')}catch(e){Alert.alert('Payment error',e.message)}finally{setBusy(false)}
+   if(!sale||busy)return;
+   const attachedScreenshot=screenshot;
+   try{setBusy(true);await addPayment({saleId,customerId:sale.customer_id,amount,method,screenshotUri:attachedScreenshot});setAmount('');pendingScreenshot.current=null;setScreenshot(null);Alert.alert('Success','Payment saved offline.')}catch(e){
+     if(attachedScreenshot){await FileSystem.deleteAsync(attachedScreenshot,{idempotent:true}).catch(()=>{});if(pendingScreenshot.current===attachedScreenshot)pendingScreenshot.current=null;setScreenshot(null)}
+     Alert.alert('Payment error',e.message)
+   }finally{setBusy(false)}
  };
 
  const whatsapp=async()=>{
@@ -57,7 +66,8 @@ export default function PaymentsScreen({route}){
  };
 
  const invoice=async()=>{
-   if(!sale)return;
+   if(!sale||busy)return;
+   let generatedPdfPath=null,backupPath=null,target=null,committed=false;
    try{
     setBusy(true);
     const invoiceNo='INV-'+String(sale.id).padStart(5,'0');
@@ -75,16 +85,28 @@ export default function PaymentsScreen({route}){
     const html=`<html><body style="font-family:Arial;padding:24px">${logo}<h1>${businessName}</h1>${owner}<p><b>Invoice:</b> ${escapeHtml(invoiceNo)}</p><p><b>Date:</b> ${escapeHtml(sale.date)}</p><hr/><h2>${customerName}</h2><p>${customerPhone}</p><table style="width:100%;border-collapse:collapse"><tr><td>Work</td><td>${workDescription}</td></tr><tr><td>Original Amount</td><td>₹${Number(sale.original_amount||sale.amount).toFixed(2)}</td></tr><tr><td>Discount</td><td>₹${Number(sale.discount_amount||0).toFixed(2)}</td></tr><tr><td>Final Sale Amount</td><td>₹${Number(sale.amount).toFixed(2)}</td></tr><tr><td>Paid</td><td>₹${Number(sale.paid_amount).toFixed(2)}</td></tr><tr><td>Pending</td><td>₹${Number(sale.pending_amount).toFixed(2)}</td></tr></table><p><b>Terms:</b> ${terms}</p>${signature}</body></html>`;
     const {generatePDF}=require('react-native-html-to-pdf');
     const result=await generatePDF({html,fileName:invoiceNo});
-    if(!result?.filePath)throw new Error('PDF file was not created.');
+    generatedPdfPath=result?.filePath||null;
+    if(!generatedPdfPath)throw new Error('PDF file was not created.');
     const invoiceDir=FileSystem.documentDirectory+'invoices/';
     await FileSystem.makeDirectoryAsync(invoiceDir,{intermediates:true});
-    const target=invoiceDir+invoiceNo+'.pdf';
+    target=invoiceDir+invoiceNo+'.pdf';
     const existing=await FileSystem.getInfoAsync(target);
-    if(existing.exists)await FileSystem.deleteAsync(target,{idempotent:true});
-    await FileSystem.copyAsync({from:result.filePath,to:target});
+    if(existing.exists){backupPath=invoiceDir+invoiceNo+'.backup_'+Date.now()+'.pdf';await FileSystem.moveAsync({from:target,to:backupPath});}
+    await FileSystem.copyAsync({from:generatedPdfPath,to:target});
     await saveInvoice({saleId,invoiceNo,pdfPath:target,date:new Date().toISOString()});
+    committed=true;
+    if(backupPath)await FileSystem.deleteAsync(backupPath,{idempotent:true});
     Alert.alert('Invoice created','PDF saved successfully.');
-   }catch(e){Alert.alert('Invoice error',e.message)}finally{setBusy(false)}
+   }catch(e){
+     if(!committed){
+       if(target)await FileSystem.deleteAsync(target,{idempotent:true}).catch(()=>{});
+       if(backupPath)await FileSystem.moveAsync({from:backupPath,to:target}).catch(()=>{});
+     }
+     Alert.alert('Invoice error',e.message)
+   }finally{
+     if(generatedPdfPath)await FileSystem.deleteAsync(generatedPdfPath,{idempotent:true}).catch(()=>{});
+     setBusy(false)
+   }
  };
 
  if(!sale)return <SafeAreaView style={styles.safe}><Text>Sale not found.</Text></SafeAreaView>;
