@@ -1,4 +1,3 @@
-import React from 'react';
 import {useFocusEffect} from '@react-navigation/native';
 import {Pressable,RefreshControl,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useCRMStore} from '../../store/useCRMStore';
