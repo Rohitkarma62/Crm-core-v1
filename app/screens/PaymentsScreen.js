@@ -10,6 +10,7 @@ import {captureRef} from 'react-native-view-shot';
 import Button from '../../components/Button';
 import Input from '../../components/Input';
 import Card from '../../components/Card';
+import {saveFileToDevice} from '../../app/core/fileStorage';
 
 const METHODS=PAYMENT_METHODS;
 
@@ -89,6 +90,13 @@ export default function PaymentsScreen({route}){
    return target;
  };
 
+ const exportInvoice=async(filePath,fileName,mimeType)=>{
+   try{
+     const saved=await saveFileToDevice({sourceUri:filePath,fileName,mimeType});
+     if(saved)Alert.alert('Invoice saved','Invoice saved in the Download folder on this device.');
+   }catch(e){Alert.alert('Save invoice error',e.message)}
+ };
+
  const invoice=async(saleData=sale,silent=false)=>{
    if(!saleData||(!silent&&busy))return;
    let generatedPdfPath=null,backupPath=null,target=null,committed=false;
@@ -143,7 +151,17 @@ export default function PaymentsScreen({route}){
    {screenshot&&<Image source={{uri:screenshot}} style={styles.image}/>}
    <Button title="Save Payment" loading={busy} onPress={pay}/>
   </Card>
-  <Card title="Invoice"><Button title="Generate Offline PDF Invoice" loading={busy} onPress={()=>invoice()}/><Button title="Generate Invoice Image" variant="secondary" loading={busy} onPress={()=>generateInvoiceImage(sale,true)}/><Button title="Send Payment Summary on WhatsApp" variant="secondary" onPress={whatsapp}/></Card>
+  <Card title="Invoice"><Button title="Generate Offline PDF Invoice" loading={busy} onPress={()=>invoice()}/><Button title="Generate Invoice Image" variant="secondary" loading={busy} onPress={()=>generateInvoiceImage(sale,true)}/><Button title="Save PDF to Download" variant="secondary" loading={busy} onPress={async()=>{
+   const invoiceNo='INV-'+String(sale.id).padStart(5,'0');
+   const path=FileSystem.documentDirectory+'invoices/'+invoiceNo+'.pdf';
+   if(!(await FileSystem.getInfoAsync(path)).exists){Alert.alert('Invoice not found','Generate the PDF invoice first.');return}
+   await exportInvoice(path,invoiceNo+'.pdf','application/pdf');
+  }}/><Button title="Save Image to Download" variant="secondary" loading={busy} onPress={async()=>{
+   const invoiceNo='INV-'+String(sale.id).padStart(5,'0');
+   const path=FileSystem.documentDirectory+'invoices/'+invoiceNo+'.png';
+   if(!(await FileSystem.getInfoAsync(path)).exists){Alert.alert('Invoice image not found','Generate the invoice image first.');return}
+   await exportInvoice(path,invoiceNo+'.png','image/png');
+  }}/><Button title="Send Payment Summary on WhatsApp" variant="secondary" onPress={whatsapp}/></Card>
   <View ref={invoiceViewRef} collapsable={false} style={styles.invoiceCapture}><Text style={styles.invoiceBrand}>{companySettings?.name||'Welding Workshop'}</Text>{!!companySettings?.owner&&<Text style={styles.invoiceMuted}>Owner: {companySettings.owner}</Text>}<Text style={styles.invoiceHeading}>INVOICE</Text><Text style={styles.invoiceText}>Invoice: INV-{String((invoiceData||sale)?.id||'').padStart(5,'0')}</Text><Text style={styles.invoiceText}>Customer: {(invoiceData||sale)?.customer_name||''}</Text><Text style={styles.invoiceText}>Phone: {(invoiceData||sale)?.phone||''}</Text><Text style={styles.invoiceText}>Work: {(invoiceData||sale)?.work_description||'Welding work'}</Text><Text style={styles.invoiceText}>Original: ₹{Number((invoiceData||sale)?.original_amount||(invoiceData||sale)?.amount||0).toFixed(2)}</Text><Text style={styles.invoiceText}>Discount: ₹{Number((invoiceData||sale)?.discount_amount||0).toFixed(2)}</Text><Text style={styles.invoiceTotal}>Final: ₹{Number((invoiceData||sale)?.amount||0).toFixed(2)}</Text><Text style={styles.invoiceText}>Paid: ₹{Number((invoiceData||sale)?.paid_amount||0).toFixed(2)}</Text><Text style={styles.invoiceText}>Pending: ₹{Number((invoiceData||sale)?.pending_amount||0).toFixed(2)}</Text><Text style={styles.invoiceMuted}>Thank you for your business.</Text></View>
   <Card title="Payment History">{payments.map(p=><View key={p.id} style={styles.history}><Text>₹{Number(p.amount).toFixed(2)} • {p.method}</Text><Text style={styles.muted}>{p.date}</Text>{p.screenshot_uri&&<Text style={styles.muted}>Screenshot saved locally</Text>}</View>)}</Card>
  </ScrollView></SafeAreaView>
