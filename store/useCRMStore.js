@@ -202,16 +202,6 @@ export const useCRMStore=create((set,get)=>({
     const list=sales||[],totalJobs=list.length,totalSpent=list.reduce((a,x)=>a+Number(x.amount||0),0),totalPaid=list.reduce((a,x)=>a+Number(x.paid_amount||0),0),totalPending=list.reduce((a,x)=>a+Number(x.pending_amount||0),0),totalDiscount=list.reduce((a,x)=>a+Number(x.discount_amount||0),0);
     return {customer,sales:list,payments:payments||[],invoices:invoices||[],stats:{totalJobs,totalSpent,totalPaid,totalPending,totalDiscount,averageJob:totalJobs?totalSpent/totalJobs:0,discountRate:(totalSpent+totalDiscount)>0?(totalDiscount/(totalSpent+totalDiscount))*100:0,lastJobDate:list[0]?.date||null}};
   },
-  loadCustomerHistory:async(customerId)=>{
-    if(!customerId) throw new Error('Customer not found');
-    const db=await getDatabase();
-    const [sales,payments,invoices]=await Promise.all([
-      db.getAllAsync('SELECT * FROM sales WHERE customer_id=? ORDER BY date DESC,id DESC',[customerId]),
-      db.getAllAsync('SELECT * FROM payments WHERE customer_id=? ORDER BY date DESC,id DESC',[customerId]),
-      db.getAllAsync('SELECT i.* FROM invoices i JOIN sales s ON s.id=i.sale_id WHERE s.customer_id=? ORDER BY i.date DESC,i.id DESC',[customerId])
-    ]);
-    return {sales:sales||[],payments:payments||[],invoices:invoices||[]};
-  },
   deleteCustomer:async(id)=>runAction(async()=>{
     if(!id) throw new Error('Customer not found');
     const db=await getDatabase();
@@ -224,37 +214,6 @@ export const useCRMStore=create((set,get)=>({
     await deleteLocalFiles(files?.map(x=>x.path));
     await refreshAfterMutation(()=>get().loadCustomers(),()=>get().loadSales(),()=>get().refreshDashboard());
   },'Customer deletion failed'),
-  deleteSale:async(id)=>runAction(async()=>{
-    if(!id) throw new Error('Sale not found');
-    const db=await getDatabase();
-    const files=await db.getAllAsync(
-      'SELECT screenshot_uri path FROM payments WHERE sale_id=? AND screenshot_uri IS NOT NULL UNION ALL SELECT pdf_path path FROM invoices WHERE sale_id=? AND pdf_path IS NOT NULL UNION ALL SELECT file_path path FROM invoices WHERE sale_id=? AND file_path IS NOT NULL',
-      [id,id,id]
-    );
-    const result=await db.runAsync('DELETE FROM sales WHERE id=?',[id]);
-    if(!result.changes) throw new Error('Sale not found');
-    await deleteLocalFiles(files?.map(x=>x.path));
-    await refreshAfterMutation(()=>get().loadSales(),()=>get().loadCustomers(),()=>get().refreshDashboard());
-  },'Sale deletion failed'),
-  deletePayment:async(id)=>runAction(async()=>{
-    if(!id) throw new Error('Payment not found');
-    const db=await getDatabase();
-    const payment=await db.getFirstAsync('SELECT sale_id,customer_id,screenshot_uri FROM payments WHERE id=?',[id]);
-    if(!payment) throw new Error('Payment not found');
-    await db.withExclusiveTransactionAsync(async(txn)=>{
-      const result=await txn.runAsync('DELETE FROM payments WHERE id=?',[id]);
-      if(!result.changes) throw new Error('Payment not found');
-      const sale=await txn.getFirstAsync('SELECT amount FROM sales WHERE id=?',[payment.sale_id]);
-      if(sale){
-        const paidRow=await txn.getFirstAsync('SELECT COALESCE(SUM(amount),0) paid FROM payments WHERE sale_id=?',[payment.sale_id]);
-        const paid=Number(paidRow?.paid||0), pending=Math.max(0,Number(sale.amount)-paid);
-        await txn.runAsync('UPDATE sales SET paid_amount=?,pending_amount=?,status=? WHERE id=?',[paid,pending,pending<=0.0001?'Paid':'Pending',payment.sale_id]);
-      }
-      await txn.runAsync('UPDATE customers SET total_paid=COALESCE((SELECT SUM(amount) FROM payments WHERE customer_id=?),0),pending_amount=COALESCE((SELECT SUM(pending_amount) FROM sales WHERE customer_id=?),0) WHERE id=?',[payment.customer_id,payment.customer_id,payment.customer_id]);
-    });
-    await deleteLocalFiles([payment.screenshot_uri]);
-    await refreshAfterMutation(()=>get().loadSales(),()=>get().loadCustomers(),()=>get().refreshDashboard());
-  },'Payment deletion failed'),
   loadCompanySettings:async()=>{
     const db=await getDatabase();
     const row=await db.getFirstAsync('SELECT * FROM company_settings LIMIT 1');
