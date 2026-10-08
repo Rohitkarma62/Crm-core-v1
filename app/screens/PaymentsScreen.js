@@ -101,10 +101,24 @@ export default function PaymentsScreen({route}){
     const invoiceDir=FileSystem.documentDirectory+'invoices/';
     await FileSystem.makeDirectoryAsync(invoiceDir,{intermediates:true});
     const existing=await FileSystem.getInfoAsync(target);
-    if(existing.exists)await FileSystem.deleteAsync(target,{idempotent:true});
-    await FileSystem.copyAsync({from:result.filePath,to:target});
-    targetCreated=true;
-    await saveInvoice({saleId,invoiceNo,pdfPath:target,date:new Date().toISOString()});
+    const hadExisting=!!existing.exists;
+    const backup=invoiceDir+'.'+invoiceNo+'.backup_'+Date.now()+'.pdf';
+    if(hadExisting)await FileSystem.copyAsync({from:target,to:backup});
+    try{
+      if(hadExisting)await FileSystem.deleteAsync(target,{idempotent:true});
+      await FileSystem.copyAsync({from:result.filePath,to:target});
+      targetCreated=true;
+      await saveInvoice({saleId,invoiceNo,pdfPath:target,date:new Date().toISOString()});
+      if(hadExisting)await FileSystem.deleteAsync(backup,{idempotent:true});
+    }catch(error){
+      if(targetCreated)await FileSystem.deleteAsync(target,{idempotent:true}).catch(()=>{});
+      if(hadExisting){
+        await FileSystem.deleteAsync(target,{idempotent:true}).catch(()=>{});
+        await FileSystem.copyAsync({from:backup,to:target}).catch(()=>{});
+        await FileSystem.deleteAsync(backup,{idempotent:true}).catch(()=>{});
+      }
+      throw error;
+    }
     Alert.alert('Invoice created','PDF saved successfully.');
    }catch(e){
     if(targetCreated){try{await FileSystem.deleteAsync(target,{idempotent:true})}catch{}}
