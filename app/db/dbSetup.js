@@ -1,6 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 
-const SCHEMA_VERSION=2;
+const SCHEMA_VERSION=3;
 let databasePromise;
 
 export const getDatabase=()=>{
@@ -108,8 +108,62 @@ export async function initDatabase(){
     await db.execAsync(`
       CREATE INDEX IF NOT EXISTS idx_payments_method ON payments(method);
       CREATE INDEX IF NOT EXISTS idx_sales_status ON sales(status);
-      PRAGMA user_version = ${SCHEMA_VERSION};
+      PRAGMA user_version = 2;
     `);
+  }
+
+  if(currentVersion<3){
+    await db.withExclusiveTransactionAsync(async(txn)=>{
+      await txn.execAsync(`
+        UPDATE payments
+        SET customer_id=(SELECT customer_id FROM sales WHERE sales.id=payments.sale_id)
+        WHERE EXISTS(SELECT 1 FROM sales WHERE sales.id=payments.sale_id)
+          AND customer_id!=(SELECT customer_id FROM sales WHERE sales.id=payments.sale_id);
+
+        UPDATE sales
+        SET paid_amount=COALESCE((SELECT SUM(amount) FROM payments WHERE payments.sale_id=sales.id),0),
+            pending_amount=MAX(0,amount-COALESCE((SELECT SUM(amount) FROM payments WHERE payments.sale_id=sales.id),0)),
+            status=CASE
+              WHEN COALESCE((SELECT SUM(amount) FROM payments WHERE payments.sale_id=sales.id),0)>=amount THEN 'Paid'
+              ELSE 'Pending'
+            END;
+
+        UPDATE customers
+        SET total_paid=COALESCE((SELECT SUM(amount) FROM payments WHERE payments.customer_id=customers.id),0),
+            pending_amount=COALESCE((SELECT SUM(pending_amount) FROM sales WHERE sales.customer_id=customers.id),0);
+
+        CREATE TRIGGER IF NOT EXISTS trg_payment_customer_match_insert
+        BEFORE INSERT ON payments
+        WHEN (SELECT customer_id FROM sales WHERE id=NEW.sale_id) IS NULL
+          OR NEW.customer_id!=(SELECT customer_id FROM sales WHERE id=NEW.sale_id)
+        BEGIN
+          SELECT RAISE(ABORT,'Payment customer does not match the sale');
+        END;
+
+        CREATE TRIGGER IF NOT EXISTS trg_payment_customer_match_update
+        BEFORE UPDATE OF sale_id,customer_id ON payments
+        WHEN (SELECT customer_id FROM sales WHERE id=NEW.sale_id) IS NULL
+          OR NEW.customer_id!=(SELECT customer_id FROM sales WHERE id=NEW.sale_id)
+        BEGIN
+          SELECT RAISE(ABORT,'Payment customer does not match the sale');
+        END;
+
+        CREATE TRIGGER IF NOT EXISTS trg_payment_amount_positive_insert
+        BEFORE INSERT ON payments
+        WHEN NEW.amount<=0
+        BEGIN
+          SELECT RAISE(ABORT,'Payment amount must be greater than 0');
+        END;
+
+        CREATE TRIGGER IF NOT EXISTS trg_payment_amount_positive_update
+        BEFORE UPDATE OF amount ON payments
+        WHEN NEW.amount<=0
+        BEGIN
+          SELECT RAISE(ABORT,'Payment amount must be greater than 0');
+        END;
+      `);
+      await txn.runAsync('PRAGMA user_version = 3');
+    });
   }
 
   return db;
