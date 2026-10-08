@@ -88,7 +88,8 @@ export async function initDatabase(){
 
     CREATE INDEX IF NOT EXISTS idx_leads_phone ON leads(phone);
     CREATE INDEX IF NOT EXISTS idx_leads_status_stage ON leads(status, stages);
-    CREATE INDEX IF NOT EXISTS idx_leads_follow_up ON leads(follow_up_date);\n    CREATE INDEX IF NOT EXISTS idx_leads_customer ON leads(customer_id);
+    CREATE INDEX IF NOT EXISTS idx_leads_follow_up ON leads(follow_up_date);
+    CREATE INDEX IF NOT EXISTS idx_leads_customer ON leads(customer_id);
     CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
     CREATE INDEX IF NOT EXISTS idx_sales_customer ON sales(customer_id);
     CREATE INDEX IF NOT EXISTS idx_sales_date ON sales(date);
