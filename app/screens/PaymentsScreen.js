@@ -64,7 +64,10 @@ export default function PaymentsScreen({route}){
        setScreenshot(null);
      }
      Alert.alert('Payment error',e.message);
-   }finally{setBusy(false)}
+   }finally{
+    if(generatedPdfPath&&generatedPdfPath!==target)await FileSystem.deleteAsync(generatedPdfPath,{idempotent:true}).catch(()=>{});
+    setBusy(false)
+   }
  };
 
  const whatsapp=async()=>{
@@ -81,6 +84,7 @@ export default function PaymentsScreen({route}){
    const invoiceNo='INV-'+String(sale.id).padStart(5,'0');
    const target=FileSystem.documentDirectory+'invoices/'+invoiceNo+'.pdf';
    let targetCreated=false;
+   let generatedPdfPath=null;
    try{
     setBusy(true);
     const company=companySettings||{};
@@ -97,7 +101,8 @@ export default function PaymentsScreen({route}){
     const html=`<html><body style="font-family:Arial;padding:24px">${logo}<h1>${businessName}</h1>${owner}<p><b>Invoice:</b> ${escapeHtml(invoiceNo)}</p><p><b>Date:</b> ${escapeHtml(sale.date)}</p><hr/><h2>${customerName}</h2><p>${customerPhone}</p><table style="width:100%;border-collapse:collapse"><tr><td>Work</td><td>${workDescription}</td></tr><tr><td>Original Amount</td><td>₹${Number(sale.original_amount||sale.amount).toFixed(2)}</td></tr><tr><td>Discount</td><td>₹${Number(sale.discount_amount||0).toFixed(2)}</td></tr><tr><td>Final Sale Amount</td><td>₹${Number(sale.amount).toFixed(2)}</td></tr><tr><td>Paid</td><td>₹${Number(sale.paid_amount).toFixed(2)}</td></tr><tr><td>Pending</td><td>₹${Number(sale.pending_amount).toFixed(2)}</td></tr></table><p><b>Terms:</b> ${terms}</p>${signature}</body></html>`;
     const {generatePDF}=require('react-native-html-to-pdf');
     const result=await generatePDF({html,fileName:invoiceNo});
-    if(!result?.filePath)throw new Error('PDF file was not created.');
+    generatedPdfPath=result?.filePath||null;
+    if(!generatedPdfPath)throw new Error('PDF file was not created.');
     const invoiceDir=FileSystem.documentDirectory+'invoices/';
     await FileSystem.makeDirectoryAsync(invoiceDir,{intermediates:true});
     const existing=await FileSystem.getInfoAsync(target);
@@ -106,7 +111,7 @@ export default function PaymentsScreen({route}){
     if(hadExisting)await FileSystem.copyAsync({from:target,to:backup});
     try{
       if(hadExisting)await FileSystem.deleteAsync(target,{idempotent:true});
-      await FileSystem.copyAsync({from:result.filePath,to:target});
+      await FileSystem.copyAsync({from:generatedPdfPath,to:target});
       targetCreated=true;
       await saveInvoice({saleId,invoiceNo,pdfPath:target,date:new Date().toISOString()});
       if(hadExisting)await FileSystem.deleteAsync(backup,{idempotent:true});
