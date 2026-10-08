@@ -90,7 +90,7 @@ export default function PaymentsScreen({route}){
  };
 
  const invoice=async(saleData=sale,silent=false)=>{
-   if(!saleData||busy)return;
+   if(!saleData||(!silent&&busy))return;
    let generatedPdfPath=null,backupPath=null,target=null,committed=false;
    try{
     if(!silent)setBusy(true);
