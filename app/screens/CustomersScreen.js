@@ -7,6 +7,7 @@ import {colors,spacing,typography} from '../../theme';
 import Button from '../../components/Button';
 import * as FileSystem from 'expo-file-system/legacy';
 import {captureRef} from 'react-native-view-shot';
+import {saveFileToDevice} from '../../app/core/fileStorage';
 
 export default function CustomersScreen({navigation}){
  const {customers,loadCustomers,loadCustomerProfile,deleteCustomer,loadCompanySettings,saveInvoice,companySettings}=useCRMStore();
@@ -59,6 +60,16 @@ export default function CustomersScreen({navigation}){
       <View style={s.invoiceLine}/><Text style={s.invoiceThanks}>Thank you for your business.</Text>
      </View>
      {generatedInvoiceUri&&<Image source={{uri:generatedInvoiceUri}} style={s.invoiceImage} resizeMode="contain"/>}
+     <Button title="Save Invoice Image to Download" variant="secondary" loading={invoiceBusy} onPress={async()=>{
+       if(!invoiceSale||invoiceBusy)return;
+       try{
+        setInvoiceBusy(true);
+        const source=FileSystem.documentDirectory+'invoices/INV-'+invoiceSale.id+'.png';
+        if(!(await FileSystem.getInfoAsync(source)).exists){Alert.alert('Invoice image not found','Generate the invoice image first.');return}
+        const saved=await saveFileToDevice({sourceUri:source,fileName:'INV-'+invoiceSale.id+'.png',mimeType:'image/png'});
+        if(saved)Alert.alert('Invoice saved','Invoice image saved in the Download folder on this device.');
+       }catch(e){Alert.alert('Save invoice error',e.message)}finally{setInvoiceBusy(false)}
+     }}/>
      <Button title="Generate & Save Invoice Image" loading={invoiceBusy} onPress={async()=>{
        if(!invoiceRef.current||invoiceBusy)return;
        try{
