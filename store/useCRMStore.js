@@ -226,15 +226,23 @@ export const useCRMStore=create((set,get)=>({
     const row=await db.getFirstAsync('SELECT * FROM company_settings LIMIT 1');
     const nextLogo=data.logo_uri||null;
     const nextSignature=data.signature_uri||null;
+    const name=String(data.name||'');
+    const owner=String(data.owner||'');
+    const terms=String(data.terms||'');
+    let saved;
     if(row){
-      await db.runAsync('UPDATE company_settings SET name=?,owner=?,logo_uri=?,signature_uri=?,terms=? WHERE id=?',[data.name||'',data.owner||'',nextLogo,nextSignature,data.terms||'',row.id]);
+      const result=await db.runAsync('UPDATE company_settings SET name=?,owner=?,logo_uri=?,signature_uri=?,terms=? WHERE id=?',[name,owner,nextLogo,nextSignature,terms,row.id]);
+      if(!result.changes) throw new Error('Company settings could not be saved');
+      saved={...row,name,owner,logo_uri:nextLogo,signature_uri:nextSignature,terms};
       await deleteLocalFiles([
         row.logo_uri&&row.logo_uri!==nextLogo?row.logo_uri:null,
         row.signature_uri&&row.signature_uri!==nextSignature?row.signature_uri:null
       ]);
     }else{
-      await db.runAsync('INSERT INTO company_settings(name,owner,logo_uri,signature_uri,terms) VALUES(?,?,?,?,?)',[data.name||'',data.owner||'',nextLogo,nextSignature,data.terms||'']);
+      const result=await db.runAsync('INSERT INTO company_settings(name,owner,logo_uri,signature_uri,terms) VALUES(?,?,?,?,?)',[name,owner,nextLogo,nextSignature,terms]);
+      saved={id:result.lastInsertRowId,name,owner,logo_uri:nextLogo,signature_uri:nextSignature,terms};
     }
-    return get().loadCompanySettings();
+    set({companySettings:saved});
+    return saved;
   }
 }));
