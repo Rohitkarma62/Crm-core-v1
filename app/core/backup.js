@@ -126,8 +126,8 @@ const mergeBackup=async(payload)=>{
     }
     for(const row of tables.leads||[]){
       await insertIfMissing(txn,
-        'INSERT INTO leads(name,phone,details,source,status,stages,follow_up_date,created_at) VALUES(?,?,?,?,?,?,?,?)',
-        [row.name||'',row.phone||'',row.details||'',row.source||'',row.status||'New',row.stages||'New',row.follow_up_date||null,row.created_at||new Date().toISOString()],
+        'INSERT INTO leads(name,phone,details,source,status,stages,follow_up_date,customer_id,created_at) VALUES(?,?,?,?,?,?,?,?,?)',
+        [row.name||'',row.phone||'',row.details||'',row.source||'',row.status||'New',row.stages||'New',row.follow_up_date||null,customerMap.get(row.customer_id)||null,row.created_at||new Date().toISOString()],
         'SELECT id FROM leads WHERE name=? AND phone=? AND created_at=? LIMIT 1',[row.name||'',row.phone||'',row.created_at||'']);
     }
     const saleMap=new Map();
@@ -172,7 +172,7 @@ export const exportCRMBackup=async()=>{
 };
 
 export const importCRMBackup=async()=>{
-  const result=await DocumentPicker.getDocumentAsync({type:'application/octet-stream',copyToCacheDirectory:true});
+  const result=await DocumentPicker.getDocumentAsync({type:'*/*',copyToCacheDirectory:true});
   if(result.canceled)return {canceled:true};
   const uri=result.assets?.[0]?.uri;
   if(!uri)throw new Error('Backup file could not be read.');
