@@ -37,17 +37,17 @@ export const useCRMStore=create((set,get)=>({
     try{
       const db=await getDatabase();
       const [counts,recent,salesOverview,pipeline]=await Promise.all([
-        db.getFirstAsync(`SELECT (SELECT COUNT(*) FROM leads) leads,(SELECT COUNT(*) FROM customers) customers,(SELECT COUNT(*) FROM sales) sales,COALESCE((SELECT SUM(amount) FROM sales),0) revenue,COALESCE((SELECT SUM(amount) FROM payments),0) collection,COALESCE((SELECT SUM(pending_amount) FROM sales),0) pending`),
+        db.getFirstAsync(`SELECT (SELECT COUNT(*) FROM leads WHERE status!='Converted') leads,(SELECT COUNT(*) FROM customers) customers,(SELECT COUNT(*) FROM sales) sales,COALESCE((SELECT SUM(amount) FROM sales),0) revenue,COALESCE((SELECT SUM(amount) FROM payments),0) collection,COALESCE((SELECT SUM(pending_amount) FROM sales),0) pending`),
         db.getAllAsync(`SELECT 'Payment' type,amount,date FROM payments UNION ALL SELECT 'Sale' type,amount,date FROM sales ORDER BY date DESC LIMIT 8`),
         db.getAllAsync(`SELECT date,COALESCE(SUM(amount),0) amount FROM sales GROUP BY date ORDER BY date DESC LIMIT 7`),
-        db.getAllAsync(`SELECT stages stage,COUNT(*) count FROM leads GROUP BY stages ORDER BY count DESC`)
+        db.getAllAsync(`SELECT stages stage,COUNT(*) count FROM leads WHERE status!='Converted' GROUP BY stages ORDER BY count DESC`)
       ]);
       set({stats:normalizeStats(counts),recentActivities:recent||[],salesOverview:salesOverview||[],leadPipeline:pipeline||[],loading:false});
     }catch(error){set({error:error?.message||'Dashboard load failed',loading:false});}
   },
   loadLeads:async()=>{
     const db=await getDatabase();
-    const rows=await db.getAllAsync('SELECT * FROM leads ORDER BY id DESC');
+    const rows=await db.getAllAsync("SELECT * FROM leads WHERE status!='Converted' ORDER BY id DESC");
     set({leads:rows||[]}); return rows||[];
   },
   saveLead:async(lead)=>runAction(async()=>{
@@ -94,7 +94,7 @@ export const useCRMStore=create((set,get)=>({
         const result=await txn.runAsync('INSERT INTO customers(name,phone,total_paid,pending_amount) VALUES(?,?,0,0)',[lead.name,lead.phone]);
         customerId=result.lastInsertRowId;
       }
-      const result=await txn.runAsync('UPDATE leads SET stages=?,status=? WHERE id=?',['Won','Won',id]);
+      const result=await txn.runAsync('UPDATE leads SET stages=?,status=?,customer_id=? WHERE id=?',['Converted','Converted',customerId,id]);
       if(!result.changes) throw new Error('Lead could not be converted');
     });
     await refreshAfterMutation(()=>get().loadLeads(),()=>get().loadCustomers(),()=>get().refreshDashboard());
