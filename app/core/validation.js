@@ -37,8 +37,8 @@ export function normalizeDate(value){
   const date=new Date(raw);
   if(Number.isNaN(date.getTime())) throw new Error('Invalid date');
   if(/^\d{4}-\d{2}-\d{2}$/.test(raw)){
-    const normalized=date.toISOString().slice(0,10);
-    if(normalized!==raw) throw new Error('Invalid date');
+    const [year,month,day]=raw.split('-').map(Number);
+    if(date.getUTCFullYear()!==year||date.getUTCMonth()!==month-1||date.getUTCDate()!==day) throw new Error('Invalid date');
   }
   return date.toISOString();
 }
