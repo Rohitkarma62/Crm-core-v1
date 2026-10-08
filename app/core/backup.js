@@ -149,7 +149,7 @@ const mergeBackup=async payload=>{
       await insertIfMissing(txn,
         'INSERT INTO payments(sale_id,customer_id,amount,method,screenshot_uri,date) VALUES(?,?,?,?,?,?)',
         [saleId,customerId,Number(row.amount||0),row.method,screenshot,row.date||new Date().toISOString()],
-        'SELECT id FROM payments WHERE sale_id=? AND amount=? AND method=? AND date=? AND screenshot_uri IS NOT NULL LIMIT 1',
+        'SELECT id FROM payments WHERE sale_id=? AND amount=? AND method=? AND date=? LIMIT 1',
         [saleId,Number(row.amount||0),row.method,row.date||'']);
     }
     for(const row of tables.invoices||[]){
