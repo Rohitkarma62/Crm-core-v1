@@ -106,6 +106,7 @@ export async function initDatabase(){
     await addColumnIfMissing(db,'sales','original_amount',"REAL NOT NULL DEFAULT 0");
     await addColumnIfMissing(db,'sales','discount_amount',"REAL NOT NULL DEFAULT 0");
     await db.runAsync("UPDATE sales SET original_amount=amount WHERE original_amount=0 AND discount_amount=0");
+    await db.runAsync('PRAGMA user_version = 1');
   }
 
   if(currentVersion<2){
