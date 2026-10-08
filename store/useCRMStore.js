@@ -87,7 +87,8 @@ export const useCRMStore=create((set,get)=>({
         const result=await txn.runAsync('INSERT INTO customers(name,phone,total_paid,pending_amount) VALUES(?,?,0,0)',[lead.name,lead.phone]);
         customerId=result.lastInsertRowId;
       }
-      await txn.runAsync('UPDATE leads SET stages=?,status=? WHERE id=?',['Won','Won',id]);
+      const result=await txn.runAsync('UPDATE leads SET stages=?,status=? WHERE id=?',['Won','Won',id]);
+      if(!result.changes) throw new Error('Lead not found');
     });
     await refreshAfterMutation(()=>get().loadLeads(),()=>get().loadCustomers(),()=>get().refreshDashboard());
     return customerId;
