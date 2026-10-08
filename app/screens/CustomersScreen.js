@@ -9,7 +9,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import {captureRef} from 'react-native-view-shot';
 
 export default function CustomersScreen({navigation}){
- const {customers,loadCustomers,loadCustomerProfile,deleteCustomer,loadCompanySettings,saveInvoice}=useCRMStore();
+ const {customers,loadCustomers,loadCustomerProfile,deleteCustomer,loadCompanySettings,saveInvoice,companySettings}=useCRMStore();
  const [profile,setProfile]=useState(null),[busy,setBusy]=useState(false),[invoiceSale,setInvoiceSale]=useState(null),[generatedInvoiceUri,setGeneratedInvoiceUri]=useState(null),[invoiceBusy,setInvoiceBusy]=useState(false);
  const invoiceRef=useRef(null);
  useFocusEffect(React.useCallback(()=>{loadCompanySettings().catch(()=>{})},[loadCompanySettings]));
@@ -42,8 +42,8 @@ export default function CustomersScreen({navigation}){
    <SafeAreaView style={s.safe}>
     <ScrollView contentContainerStyle={s.form}>
      <View ref={invoiceRef} collapsable={false} style={s.invoice}>
-      <Text style={s.invoiceBrand}>{profile?.customer?.name ? (useCRMStore.getState().companySettings?.name||'WORKSHOP INVOICE') : 'WORKSHOP INVOICE'}</Text>
-      <Text style={s.invoiceOwner}>{useCRMStore.getState().companySettings?.owner||''}</Text>
+      <Text style={s.invoiceBrand}>{profile?.customer?.name ? (companySettings?.name||'WORKSHOP INVOICE') : 'WORKSHOP INVOICE'}</Text>
+      <Text style={s.invoiceOwner}>{companySettings?.owner||''}</Text>
       <Text style={s.invoiceTitle}>INVOICE</Text>
       <View style={s.invoiceLine}/><Text style={s.invoiceText}>Invoice No: INV-{invoiceSale?.id||''}</Text>
       <Text style={s.invoiceText}>Date: {invoiceSale?.date||''}</Text>
