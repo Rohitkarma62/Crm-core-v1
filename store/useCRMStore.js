@@ -81,11 +81,12 @@ export const useCRMStore=create((set,get)=>({
     await refreshAfterMutation(()=>get().loadLeads(),()=>get().refreshDashboard());
   },'Lead stage update failed'),
   convertLead:async(id)=>{
+    if(!id) throw new Error('Lead not found');
     const db=await getDatabase();
-    const lead=await db.getFirstAsync('SELECT * FROM leads WHERE id=?',[id]);
-    if(!lead) throw new Error('Lead not found');
     let customerId;
     await db.withExclusiveTransactionAsync(async(txn)=>{
+      const lead=await txn.getFirstAsync('SELECT * FROM leads WHERE id=?',[id]);
+      if(!lead) throw new Error('Lead not found');
       const existingCustomer=await txn.getFirstAsync('SELECT id FROM customers WHERE phone=?',[lead.phone]);
       if(existingCustomer){
         customerId=existingCustomer.id;
@@ -93,7 +94,8 @@ export const useCRMStore=create((set,get)=>({
         const result=await txn.runAsync('INSERT INTO customers(name,phone,total_paid,pending_amount) VALUES(?,?,0,0)',[lead.name,lead.phone]);
         customerId=result.lastInsertRowId;
       }
-      await txn.runAsync('UPDATE leads SET stages=?,status=? WHERE id=?',['Won','Won',id]);
+      const result=await txn.runAsync('UPDATE leads SET stages=?,status=? WHERE id=?',['Won','Won',id]);
+      if(!result.changes) throw new Error('Lead could not be converted');
     });
     await refreshAfterMutation(()=>get().loadLeads(),()=>get().loadCustomers(),()=>get().refreshDashboard());
     return customerId;
