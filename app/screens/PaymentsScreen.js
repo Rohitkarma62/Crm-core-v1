@@ -66,7 +66,7 @@ export default function PaymentsScreen({route}){
   const digits=String(sale.phone).replace(/\D/g,'');
   const phone=digits.length===10?'91'+digits:digits;
   const url='whatsapp://send?phone='+encodeURIComponent(phone)+'&text='+text;
-  try{await Linking.openURL(url)}catch(e){Alert.alert('WhatsApp not available','WhatsApp app is not installed or cannot handle this link.')}
+  try{await Linking.openURL(url)}catch{Alert.alert('WhatsApp not available','WhatsApp app is not installed or cannot handle this link.')}
  };
 
  const invoice=async()=>{
