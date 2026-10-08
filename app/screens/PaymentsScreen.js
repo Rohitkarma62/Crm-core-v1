@@ -1,6 +1,6 @@
 import React,{useEffect,useRef,useState} from 'react';
 import {useFocusEffect} from '@react-navigation/native';
-import {Alert,Image,SafeAreaView,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Alert,Image,SafeAreaView,ScrollView,StyleSheet,Text,View,Linking} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import {PAYMENT_METHODS} from '../../app/core/constants';
@@ -11,7 +11,6 @@ import Button from '../../components/Button';
 import Input from '../../components/Input';
 import Card from '../../components/Card';
 import {saveFileToDevice} from '../../app/core/fileStorage';
-import Share from 'react-native-share';
 
 const METHODS=PAYMENT_METHODS;
 
@@ -69,32 +68,11 @@ export default function PaymentsScreen({route}){
 
  const whatsapp=async()=>{
   if(!sale?.phone){Alert.alert('WhatsApp','Customer phone number unavailable.');return}
-  const invoiceNo='INV-'+String(sale.id).padStart(5,'0');
-  const invoicePath=FileSystem.documentDirectory+'invoices/'+invoiceNo+'.png';
-  try{
-    if(!(await FileSystem.getInfoAsync(invoicePath)).exists){
-      await generateInvoiceImage(sale,true);
-    }
-    if(!(await FileSystem.getInfoAsync(invoicePath)).exists){
-      Alert.alert('Invoice image unavailable','Generate the invoice image before sending it on WhatsApp.');
-      return;
-    }
-    const digits=String(sale.phone).replace(/\D/g,'');
-    const phone=digits.length===10?'91'+digits:digits;
-    const message=`Hello ${sale.customer_name}, your welding workshop invoice is ₹${Number(sale.amount).toFixed(2)}. Paid ₹${Number(sale.paid_amount).toFixed(2)}, pending ₹${Number(sale.pending_amount).toFixed(2)}.`;
-    await Share.shareSingle({
-      title:'Send Invoice on WhatsApp',
-      message,
-      url:invoicePath,
-      type:'image/png',
-      social:Share.Social.WHATSAPP,
-      whatsAppNumber:phone,
-      filename:invoiceNo+'.png'
-    });
-  }catch(e){
-    if(e?.message==='User did not share')return;
-    Alert.alert('WhatsApp sharing failed',e?.message||'Invoice could not be shared on WhatsApp.');
-  }
+  const text=encodeURIComponent(`Hello ${sale.customer_name}, your welding workshop invoice is ₹${Number(sale.amount).toFixed(2)}. Paid ₹${Number(sale.paid_amount).toFixed(2)}, pending ₹${Number(sale.pending_amount).toFixed(2)}.`);
+  const digits=String(sale.phone).replace(/\D/g,'');
+  const phone=digits.length===10?'91'+digits:digits;
+  const url='whatsapp://send?phone='+encodeURIComponent(phone)+'&text='+text;
+  try{await Linking.openURL(url)}catch(e){Alert.alert('WhatsApp not available','WhatsApp app is not installed or cannot handle this link.')}
  };
 
  const generateInvoiceImage=async(saleData,showAlert=false)=>{
@@ -183,7 +161,7 @@ export default function PaymentsScreen({route}){
    const path=FileSystem.documentDirectory+'invoices/'+invoiceNo+'.png';
    if(!(await FileSystem.getInfoAsync(path)).exists){Alert.alert('Invoice image not found','Generate the invoice image first.');return}
    await exportInvoice(path,invoiceNo+'.png','image/png');
-  }}/><Button title="Send Invoice + Message on WhatsApp" variant="secondary" onPress={whatsapp}/></Card>
+  }}/><Button title="Send Payment Summary on WhatsApp" variant="secondary" onPress={whatsapp}/></Card>
   <View ref={invoiceViewRef} collapsable={false} style={styles.invoiceCapture}><Text style={styles.invoiceBrand}>{companySettings?.name||'Welding Workshop'}</Text>{!!companySettings?.owner&&<Text style={styles.invoiceMuted}>Owner: {companySettings.owner}</Text>}<Text style={styles.invoiceHeading}>INVOICE</Text><Text style={styles.invoiceText}>Invoice: INV-{String((invoiceData||sale)?.id||'').padStart(5,'0')}</Text><Text style={styles.invoiceText}>Customer: {(invoiceData||sale)?.customer_name||''}</Text><Text style={styles.invoiceText}>Phone: {(invoiceData||sale)?.phone||''}</Text><Text style={styles.invoiceText}>Work: {(invoiceData||sale)?.work_description||'Welding work'}</Text><Text style={styles.invoiceText}>Original: ₹{Number((invoiceData||sale)?.original_amount||(invoiceData||sale)?.amount||0).toFixed(2)}</Text><Text style={styles.invoiceText}>Discount: ₹{Number((invoiceData||sale)?.discount_amount||0).toFixed(2)}</Text><Text style={styles.invoiceTotal}>Final: ₹{Number((invoiceData||sale)?.amount||0).toFixed(2)}</Text><Text style={styles.invoiceText}>Paid: ₹{Number((invoiceData||sale)?.paid_amount||0).toFixed(2)}</Text><Text style={styles.invoiceText}>Pending: ₹{Number((invoiceData||sale)?.pending_amount||0).toFixed(2)}</Text><Text style={styles.invoiceMuted}>Thank you for your business.</Text></View>
   <Card title="Payment History">{payments.map(p=><View key={p.id} style={styles.history}><Text>₹{Number(p.amount).toFixed(2)} • {p.method}</Text><Text style={styles.muted}>{p.date}</Text>{p.screenshot_uri&&<Text style={styles.muted}>Screenshot saved locally</Text>}</View>)}</Card>
  </ScrollView></SafeAreaView>
