@@ -1,4 +1,3 @@
-import React from 'react';
 import {StatusBar,Text} from 'react-native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
