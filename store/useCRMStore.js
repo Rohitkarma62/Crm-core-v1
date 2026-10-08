@@ -173,10 +173,10 @@ export const useCRMStore=create((set,get)=>({
     const db=await getDatabase();
     const sale=await db.getFirstAsync('SELECT id FROM sales WHERE id=?',[saleId]);
     if(!sale) throw new Error('Sale not found');
-    await db.runAsync(`INSERT INTO invoices(sale_id,invoice_no,pdf_path,date)
-      VALUES(?,?,?,?)
-      ON CONFLICT(invoice_no) DO UPDATE SET sale_id=excluded.sale_id,pdf_path=excluded.pdf_path,date=excluded.date`,
-      [saleId,invoiceNo,pdfPath||null,normalizeDate(date)]);
+    await db.runAsync(`INSERT INTO invoices(sale_id,invoice_no,pdf_path,file_path,date)
+      VALUES(?,?,?,?,?)
+      ON CONFLICT(invoice_no) DO UPDATE SET sale_id=excluded.sale_id,pdf_path=excluded.pdf_path,file_path=excluded.file_path,date=excluded.date`,
+      [saleId,invoiceNo,pdfPath||null,arguments[0]?.filePath||null,normalizeDate(date)]);
   },'Invoice could not be saved'),
   loadReports:async()=>{
     const db=await getDatabase();
@@ -199,8 +199,8 @@ export const useCRMStore=create((set,get)=>({
       db.getAllAsync('SELECT i.* FROM invoices i JOIN sales s ON s.id=i.sale_id WHERE s.customer_id=? ORDER BY i.date DESC,i.id DESC',[customerId])
     ]);
     if(!customer) throw new Error('Customer not found');
-    const list=sales||[],totalJobs=list.length,totalSpent=list.reduce((a,x)=>a+Number(x.amount||0),0),totalDiscount=list.reduce((a,x)=>a+Number(x.discount_amount||0),0);
-    return {customer,sales:list,payments:payments||[],invoices:invoices||[],stats:{totalJobs,totalSpent,totalDiscount,averageJob:totalJobs?totalSpent/totalJobs:0,discountRate:(totalSpent+totalDiscount)>0?(totalDiscount/(totalSpent+totalDiscount))*100:0,lastJobDate:list[0]?.date||null}};
+    const list=sales||[],totalJobs=list.length,totalSpent=list.reduce((a,x)=>a+Number(x.amount||0),0),totalPaid=list.reduce((a,x)=>a+Number(x.paid_amount||0),0),totalPending=list.reduce((a,x)=>a+Number(x.pending_amount||0),0),totalDiscount=list.reduce((a,x)=>a+Number(x.discount_amount||0),0);
+    return {customer,sales:list,payments:payments||[],invoices:invoices||[],stats:{totalJobs,totalSpent,totalPaid,totalPending,totalDiscount,averageJob:totalJobs?totalSpent/totalJobs:0,discountRate:(totalSpent+totalDiscount)>0?(totalDiscount/(totalSpent+totalDiscount))*100:0,lastJobDate:list[0]?.date||null}};
   },
   loadCustomerHistory:async(customerId)=>{
     if(!customerId) throw new Error('Customer not found');
@@ -216,8 +216,8 @@ export const useCRMStore=create((set,get)=>({
     if(!id) throw new Error('Customer not found');
     const db=await getDatabase();
     const files=await db.getAllAsync(
-      'SELECT screenshot_uri path FROM payments WHERE customer_id=? AND screenshot_uri IS NOT NULL UNION ALL SELECT i.pdf_path path FROM invoices i JOIN sales s ON s.id=i.sale_id WHERE s.customer_id=? AND i.pdf_path IS NOT NULL',
-      [id,id]
+      'SELECT screenshot_uri path FROM payments WHERE customer_id=? AND screenshot_uri IS NOT NULL UNION ALL SELECT i.pdf_path path FROM invoices i JOIN sales s ON s.id=i.sale_id WHERE s.customer_id=? AND i.pdf_path IS NOT NULL UNION ALL SELECT i.file_path path FROM invoices i JOIN sales s ON s.id=i.sale_id WHERE s.customer_id=? AND i.file_path IS NOT NULL',
+      [id,id,id]
     );
     const result=await db.runAsync('DELETE FROM customers WHERE id=?',[id]);
     if(!result.changes) throw new Error('Customer not found');
@@ -228,8 +228,8 @@ export const useCRMStore=create((set,get)=>({
     if(!id) throw new Error('Sale not found');
     const db=await getDatabase();
     const files=await db.getAllAsync(
-      'SELECT screenshot_uri path FROM payments WHERE sale_id=? AND screenshot_uri IS NOT NULL UNION ALL SELECT pdf_path path FROM invoices WHERE sale_id=? AND pdf_path IS NOT NULL',
-      [id,id]
+      'SELECT screenshot_uri path FROM payments WHERE sale_id=? AND screenshot_uri IS NOT NULL UNION ALL SELECT pdf_path path FROM invoices WHERE sale_id=? AND pdf_path IS NOT NULL UNION ALL SELECT file_path path FROM invoices WHERE sale_id=? AND file_path IS NOT NULL',
+      [id,id,id]
     );
     const result=await db.runAsync('DELETE FROM sales WHERE id=?',[id]);
     if(!result.changes) throw new Error('Sale not found');
