@@ -54,6 +54,9 @@ export async function initDatabase(){
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       customer_id INTEGER NOT NULL,
       amount REAL NOT NULL DEFAULT 0,
+      work_description TEXT NOT NULL DEFAULT '',
+      original_amount REAL NOT NULL DEFAULT 0,
+      discount_amount REAL NOT NULL DEFAULT 0,
       date TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'Pending',
       paid_amount REAL NOT NULL DEFAULT 0,
@@ -78,6 +81,7 @@ export async function initDatabase(){
       sale_id INTEGER NOT NULL,
       invoice_no TEXT NOT NULL UNIQUE,
       pdf_path TEXT,
+      file_path TEXT,
       date TEXT NOT NULL,
       FOREIGN KEY(sale_id) REFERENCES sales(id) ON DELETE CASCADE
     );
@@ -108,8 +112,8 @@ export async function initDatabase(){
     await db.execAsync(`
       CREATE INDEX IF NOT EXISTS idx_payments_method ON payments(method);
       CREATE INDEX IF NOT EXISTS idx_sales_status ON sales(status);
-      PRAGMA user_version = ${SCHEMA_VERSION};
     `);
+    await db.runAsync('PRAGMA user_version = 2');
   }
 
   if(currentVersion<3){
@@ -120,18 +124,17 @@ export async function initDatabase(){
     });
   }
 
-  if(currentVersion<5){
-    await addColumnIfMissing(db,'invoices','file_path','TEXT');
-  }
-
   if(currentVersion<4){
     await db.withExclusiveTransactionAsync(async(txn)=>{
       await txn.execAsync("CREATE TRIGGER IF NOT EXISTS trg_sale_amount_positive_insert BEFORE INSERT ON sales WHEN NEW.amount<=0 OR NEW.original_amount<=0 OR NEW.discount_amount<0 OR NEW.original_amount<NEW.amount BEGIN SELECT RAISE(ABORT,'Invalid sale amount'); END; CREATE TRIGGER IF NOT EXISTS trg_sale_amount_positive_update BEFORE UPDATE OF amount,original_amount,discount_amount ON sales WHEN NEW.amount<=0 OR NEW.original_amount<=0 OR NEW.discount_amount<0 OR NEW.original_amount<NEW.amount BEGIN SELECT RAISE(ABORT,'Invalid sale amount'); END; CREATE TRIGGER IF NOT EXISTS trg_sale_payment_totals_insert BEFORE INSERT ON sales WHEN NEW.paid_amount<0 OR NEW.pending_amount<0 OR NEW.paid_amount>NEW.amount+0.0001 BEGIN SELECT RAISE(ABORT,'Invalid sale payment totals'); END; CREATE TRIGGER IF NOT EXISTS trg_sale_payment_totals_update BEFORE UPDATE OF amount,paid_amount,pending_amount ON sales WHEN NEW.paid_amount<0 OR NEW.pending_amount<0 OR NEW.paid_amount>NEW.amount+0.0001 BEGIN SELECT RAISE(ABORT,'Invalid sale payment totals'); END;");
-      await txn.runAsync('PRAGMA user_version = 4');
     });
+    await db.runAsync('PRAGMA user_version = 4');
   }
 
-  await db.runAsync('PRAGMA user_version = 5');
+  if(currentVersion<5){
+    await addColumnIfMissing(db,'invoices','file_path','TEXT');
+    await db.runAsync('PRAGMA user_version = 5');
+  }
 
   return db;
 }
