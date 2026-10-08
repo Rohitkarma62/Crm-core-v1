@@ -1,6 +1,5 @@
 import * as SQLite from 'expo-sqlite';
 
-const SCHEMA_VERSION=6;
 let databasePromise;
 
 export const getDatabase=()=>{
@@ -39,6 +38,7 @@ export async function initDatabase(){
       status TEXT NOT NULL DEFAULT 'New',
       stages TEXT NOT NULL DEFAULT 'New',
       follow_up_date TEXT,
+      customer_id INTEGER,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -135,6 +135,12 @@ export async function initDatabase(){
   if(currentVersion<5){
     await addColumnIfMissing(db,'invoices','file_path','TEXT');
     await db.runAsync('PRAGMA user_version = 5');
+  }
+
+  if(currentVersion<6){
+    await addColumnIfMissing(db,'leads','customer_id','INTEGER');
+    await db.execAsync('CREATE INDEX IF NOT EXISTS idx_leads_customer ON leads(customer_id)');
+    await db.runAsync('PRAGMA user_version = 6');
   }
 
   return db;
