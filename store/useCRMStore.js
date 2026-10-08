@@ -175,7 +175,7 @@ export const useCRMStore=create((set,get)=>({
     if(!sale) throw new Error('Sale not found');
     await db.runAsync(`INSERT INTO invoices(sale_id,invoice_no,pdf_path,file_path,date)
       VALUES(?,?,?,?,?)
-      ON CONFLICT(invoice_no) DO UPDATE SET sale_id=excluded.sale_id,pdf_path=excluded.pdf_path,file_path=excluded.file_path,date=excluded.date`,
+      ON CONFLICT(invoice_no) DO UPDATE SET sale_id=excluded.sale_id,pdf_path=COALESCE(excluded.pdf_path,invoices.pdf_path),file_path=COALESCE(excluded.file_path,invoices.file_path),date=excluded.date`,
       [saleId,invoiceNo,pdfPath||null,filePath||null,normalizeDate(date)]);
   },'Invoice could not be saved'),
   loadReports:async()=>{
