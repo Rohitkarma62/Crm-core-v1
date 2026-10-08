@@ -117,6 +117,7 @@ export default function PaymentsScreen({route}){
         await FileSystem.copyAsync({from:backup,to:target}).catch(()=>{});
         await FileSystem.deleteAsync(backup,{idempotent:true}).catch(()=>{});
       }
+      targetCreated=false;
       throw error;
     }
     Alert.alert('Invoice created','PDF saved successfully.');
