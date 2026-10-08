@@ -106,15 +106,33 @@ export default function PaymentsScreen({route}){
     const company=companySettings||{};
     const logoData=company.logo_uri?await toDataUri(company.logo_uri):'';
     const signatureData=company.signature_uri?await toDataUri(company.signature_uri):'';
-    const logo=logoData?'<img src="'+logoData+'" style="max-width:180px;max-height:90px"/>':'';
-    const signature=signatureData?'<div style="margin-top:28px"><img src="'+signatureData+'" style="max-width:180px;max-height:80px"/><div>Authorized Signature</div></div>':'';
+    const logo=logoData?'<img src="'+logoData+'" style="width:92px;height:92px;object-fit:contain"/>':'';
+    const signature=signatureData?'<div style="text-align:right;margin-top:28px"><img src="'+signatureData+'" style="max-width:160px;max-height:70px;object-fit:contain"/><div style="font-size:11px;color:#666">Authorized Signature</div></div>':'';
     const terms=escapeHtml(company.terms||'Thank you for your business.');
     const businessName=escapeHtml(company.name||'Welding Workshop');
-    const owner=company.owner?'<p><b>Owner:</b> '+escapeHtml(company.owner)+'</p>':'';
+    const owner=company.owner?escapeHtml(company.owner):'';
     const customerName=escapeHtml(saleData.customer_name||'Customer');
     const customerPhone=escapeHtml(saleData.phone||'');
     const workDescription=escapeHtml(saleData.work_description||'Welding work');
-    const html='<html><body style="font-family:Arial;padding:24px">'+logo+'<h1>'+businessName+'</h1>'+owner+'<p><b>Invoice:</b> '+escapeHtml(invoiceNo)+'</p><p><b>Date:</b> '+escapeHtml(saleData.date)+'</p><hr/><h2>'+customerName+'</h2><p>'+customerPhone+'</p><table style="width:100%;border-collapse:collapse"><tr><td>Work</td><td>'+workDescription+'</td></tr><tr><td>Original Amount</td><td>₹'+Number(saleData.original_amount||saleData.amount).toFixed(2)+'</td></tr><tr><td>Discount</td><td>₹'+Number(saleData.discount_amount||0).toFixed(2)+'</td></tr><tr><td>Final Sale Amount</td><td>₹'+Number(saleData.amount).toFixed(2)+'</td></tr><tr><td>Paid</td><td>₹'+Number(saleData.paid_amount).toFixed(2)+'</td></tr><tr><td>Pending</td><td>₹'+Number(saleData.pending_amount).toFixed(2)+'</td></tr></table><p><b>Terms:</b> '+terms+'</p>'+signature+'</body></html>';
+    const invoiceDate=escapeHtml(saleData.date||new Date().toISOString().slice(0,10));
+    const original=Number(saleData.original_amount||saleData.amount||0).toFixed(2);
+    const discount=Number(saleData.discount_amount||0).toFixed(2);
+    const finalAmount=Number(saleData.amount||0).toFixed(2);
+    const paid=Number(saleData.paid_amount||0).toFixed(2);
+    const pending=Number(saleData.pending_amount||0).toFixed(2);
+    const status=Number(saleData.pending_amount||0)>0?'PAYMENT PENDING':'PAID';
+    const html='<html><body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:28px;color:#1a1a1a">'+
+      '<div style="background:#fff;border:1px solid #d9d9d9;padding:30px;max-width:760px;margin:auto">'+
+      '<table style="width:100%;border-collapse:collapse"><tr><td style="vertical-align:top">'+logo+'<div style="font-size:25px;font-weight:bold;margin-top:8px">'+businessName+'</div>'+(owner?'<div style="font-size:12px;color:#666;margin-top:4px">Owner: '+owner+'</div>':'')+
+      '</td><td style="text-align:right;vertical-align:top"><div style="font-size:28px;font-weight:bold;letter-spacing:2px">INVOICE</div><div style="font-size:13px;color:#666;margin-top:8px">Invoice No: <b>'+escapeHtml(invoiceNo)+'</b></div><div style="font-size:13px;color:#666;margin-top:4px">Date: '+invoiceDate+'</div><div style="display:inline-block;margin-top:10px;padding:6px 12px;border:1px solid #222;font-size:11px;font-weight:bold">'+status+'</div></td></tr></table>'+
+      '<div style="height:1px;background:#222;margin:24px 0"></div>'+
+      '<div style="font-size:11px;color:#777;text-transform:uppercase;letter-spacing:1px">Bill To</div><div style="font-size:17px;font-weight:bold;margin-top:5px">'+customerName+'</div><div style="font-size:12px;color:#666;margin-top:3px">'+customerPhone+'</div>'+
+      '<table style="width:100%;border-collapse:collapse;margin-top:24px"><tr style="background:#222;color:#fff"><th style="padding:10px;text-align:left">Description</th><th style="padding:10px;text-align:right">Amount</th></tr><tr><td style="padding:14px 10px;border-bottom:1px solid #ddd">'+workDescription+'</td><td style="padding:14px 10px;border-bottom:1px solid #ddd;text-align:right">₹'+original+'</td></tr></table>'+
+      '<table style="width:48%;margin-left:auto;border-collapse:collapse;margin-top:18px"><tr><td style="padding:5px;color:#666">Subtotal</td><td style="padding:5px;text-align:right">₹'+original+'</td></tr><tr><td style="padding:5px;color:#666">Discount</td><td style="padding:5px;text-align:right">- ₹'+discount+'</td></tr><tr><td style="padding:10px 5px;border-top:2px solid #222;font-weight:bold;font-size:15px">Grand Total</td><td style="padding:10px 5px;border-top:2px solid #222;text-align:right;font-weight:bold;font-size:15px">₹'+finalAmount+'</td></tr><tr><td style="padding:5px;color:#666">Paid</td><td style="padding:5px;text-align:right">₹'+paid+'</td></tr><tr><td style="padding:5px;font-weight:bold">Balance Due</td><td style="padding:5px;text-align:right;font-weight:bold">₹'+pending+'</td></tr></table>'+
+      '<div style="margin-top:26px;padding:14px;background:#f5f5f5;border-left:3px solid #222"><div style="font-size:11px;font-weight:bold;text-transform:uppercase">Terms & Notes</div><div style="font-size:11px;color:#555;margin-top:5px">'+terms+'</div></div>'+
+      signature+
+      '<div style="margin-top:30px;padding-top:12px;border-top:1px solid #ddd;text-align:center;font-size:10px;color:#777">Computer-generated invoice • '+businessName+' • Thank you for your business</div>'+
+      '</div></body></html>';
     const {generatePDF}=require('react-native-html-to-pdf');
     const result=await generatePDF({html,fileName:invoiceNo});
     generatedPdfPath=result?.filePath||null;
