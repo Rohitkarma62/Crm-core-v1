@@ -5,31 +5,27 @@ import { getDatabase } from '../db/dbSetup';
 const BACKUP_VERSION=1;
 const TABLES=['company_settings','leads','customers','sales','payments','invoices'];
 
-const mimeFromPath=path=>{
-  const ext=String(path||'').split('.').pop()?.toLowerCase();
-  return ext==='pdf'?'application/pdf':ext==='jpg'||ext==='jpeg'?'image/jpeg':ext==='png'?'image/png':ext==='webp'?'image/webp':'application/octet-stream';
-};
-
 const fileNameFromPath=path=>String(path||'').split('/').pop()||'file';
 
-const readFileAsset=async(path,key)=>{
+const readFileAsset=async path=>{
   if(!path)return null;
   try{
     const info=await FileSystem.getInfoAsync(path);
     if(!info.exists)return null;
+    const ext=String(path).split('.').pop()?.toLowerCase();
+    const mimeType=ext==='pdf'?'application/pdf':ext==='jpg'||ext==='jpeg'?'image/jpeg':ext==='png'?'image/png':ext==='webp'?'image/webp':'application/octet-stream';
     return {
-      key,
       originalPath:path,
       name:fileNameFromPath(path),
-      mimeType:mimeFromPath(path),
+      mimeType,
       base64:await FileSystem.readAsStringAsync(path,{encoding:FileSystem.EncodingType.Base64})
     };
   }catch{return null}
 };
 
-const addAsset=async(assets,path,key)=>{
+const addAsset=async(assets,path)=>{
   if(!path||assets.some(x=>x.originalPath===path))return;
-  const asset=await readFileAsset(path,key);
+  const asset=await readFileAsset(path);
   if(asset)assets.push(asset);
 };
 
@@ -39,12 +35,12 @@ const buildBackup=async()=>{
   for(const table of TABLES)data[table]=await db.getAllAsync('SELECT * FROM '+table);
   const assets=[];
   const company=data.company_settings?.[0];
-  await addAsset(assets,company?.logo_uri,'company.logo_uri');
-  await addAsset(assets,company?.signature_uri,'company.signature_uri');
-  for(const row of data.payments||[])await addAsset(assets,row.screenshot_uri,'payments.'+row.id+'.screenshot_uri');
+  await addAsset(assets,company?.logo_uri);
+  await addAsset(assets,company?.signature_uri);
+  for(const row of data.payments||[])await addAsset(assets,row.screenshot_uri);
   for(const row of data.invoices||[]){
-    await addAsset(assets,row.pdf_path,'invoices.'+row.id+'.pdf_path');
-    await addAsset(assets,row.file_path,'invoices.'+row.id+'.file_path');
+    await addAsset(assets,row.pdf_path);
+    await addAsset(assets,row.file_path);
   }
   return {
     format:'VF_CRM_BACKUP',
@@ -56,10 +52,10 @@ const buildBackup=async()=>{
   };
 };
 
-const writeBackupFile=async(payload)=>{
+const writeBackupFile=async(payload,prefix='VF_CRM_Backup_')=>{
   const dir=FileSystem.documentDirectory+'backups/';
   await FileSystem.makeDirectoryAsync(dir,{intermediates:true});
-  const uri=dir+'VF_CRM_Backup_'+new Date().toISOString().replace(/[:.]/g,'-')+'.vfbackup';
+  const uri=dir+prefix+new Date().toISOString().replace(/[:.]/g,'-')+'.vfbackup';
   await FileSystem.writeAsStringAsync(uri,JSON.stringify(payload),{encoding:FileSystem.EncodingType.UTF8});
   return uri;
 };
@@ -96,22 +92,25 @@ const insertIfMissing=async(txn,sql,args,checkSql,checkArgs)=>{
   return result.lastInsertRowId;
 };
 
-const mergeBackup=async(payload)=>{
+const mergeBackup=async payload=>{
   if(!payload||payload.format!=='VF_CRM_BACKUP'||Number(payload.backup_version)!==BACKUP_VERSION)throw new Error('Invalid or unsupported VF backup file.');
   const tables=payload.tables||{};
   const db=await getDatabase();
   const assetMap=new Map();
   for(let i=0;i<(payload.files||[]).length;i++){
     const asset=payload.files[i];
+    if(!asset?.originalPath||typeof asset.base64!=='string')continue;
     assetMap.set(asset.originalPath,await restoreAsset(asset,i));
   }
-  await db.withExclusiveTransactionAsync(async(txn)=>{
+  await db.withExclusiveTransactionAsync(async txn=>{
     const customerMap=new Map();
     for(const row of tables.customers||[]){
+      const phone=String(row.phone||'').trim();
       const id=await insertIfMissing(txn,
         'INSERT INTO customers(name,phone,total_paid,pending_amount) VALUES(?,?,?,?)',
-        [String(row.name||''),String(row.phone||''),Number(row.total_paid||0),Number(row.pending_amount||0)],
-        'SELECT id FROM customers WHERE phone=? LIMIT 1',[String(row.phone||'')]);
+        [String(row.name||''),phone,Number(row.total_paid||0),Number(row.pending_amount||0)],
+        phone?'SELECT id FROM customers WHERE phone=? LIMIT 1':'SELECT id FROM customers WHERE name=? AND phone=? LIMIT 1',
+        phone?[phone]:[String(row.name||''),'']);
       customerMap.set(row.id,id);
     }
     for(const row of tables.company_settings||[]){
@@ -125,19 +124,22 @@ const mergeBackup=async(payload)=>{
           [row.name||'',row.owner||'',logo,signature,row.terms||'',current.id]);
     }
     for(const row of tables.leads||[]){
+      const customerId=customerMap.get(row.customer_id)||null;
       await insertIfMissing(txn,
         'INSERT INTO leads(name,phone,details,source,status,stages,follow_up_date,customer_id,created_at) VALUES(?,?,?,?,?,?,?,?,?)',
-        [row.name||'',row.phone||'',row.details||'',row.source||'',row.status||'New',row.stages||'New',row.follow_up_date||null,customerMap.get(row.customer_id)||null,row.created_at||new Date().toISOString()],
+        [row.name||'',row.phone||'',row.details||'',row.source||'',row.status||'New',row.stages||'New',row.follow_up_date||null,customerId,row.created_at||new Date().toISOString()],
         'SELECT id FROM leads WHERE name=? AND phone=? AND created_at=? LIMIT 1',[row.name||'',row.phone||'',row.created_at||'']);
     }
     const saleMap=new Map();
     for(const row of tables.sales||[]){
       const customerId=customerMap.get(row.customer_id)||row.customer_id;
+      const amount=Number(row.amount||0);
+      const workDescription=row.work_description||'';
       const id=await insertIfMissing(txn,
         'INSERT INTO sales(customer_id,amount,work_description,original_amount,discount_amount,date,status,paid_amount,pending_amount) VALUES(?,?,?,?,?,?,?,?,?)',
-        [customerId,Number(row.amount||0),row.work_description||'',Number(row.original_amount||row.amount||0),Number(row.discount_amount||0),row.date||new Date().toISOString(),row.status||'Pending',Number(row.paid_amount||0),Number(row.pending_amount||0)],
-        'SELECT id FROM sales WHERE customer_id=? AND date=? AND amount=? AND work_description=? LIMIT 1',
-        [customerId,row.date||'',Number(row.amount||0),row.work_description||'']);
+        [customerId,amount,workDescription,Number(row.original_amount||amount),Number(row.discount_amount||0),row.date||new Date().toISOString(),row.status||'Pending',Number(row.paid_amount||0),Number(row.pending_amount||0)],
+        'SELECT id FROM sales WHERE customer_id=? AND date=? AND amount=? AND work_description=? AND original_amount=? AND discount_amount=? LIMIT 1',
+        [customerId,row.date||'',amount,workDescription,Number(row.original_amount||amount),Number(row.discount_amount||0)]);
       saleMap.set(row.id,id);
     }
     for(const row of tables.payments||[]){
@@ -147,7 +149,7 @@ const mergeBackup=async(payload)=>{
       await insertIfMissing(txn,
         'INSERT INTO payments(sale_id,customer_id,amount,method,screenshot_uri,date) VALUES(?,?,?,?,?,?)',
         [saleId,customerId,Number(row.amount||0),row.method,screenshot,row.date||new Date().toISOString()],
-        'SELECT id FROM payments WHERE sale_id=? AND amount=? AND method=? AND date=? LIMIT 1',
+        'SELECT id FROM payments WHERE sale_id=? AND amount=? AND method=? AND date=? AND screenshot_uri IS NOT NULL LIMIT 1',
         [saleId,Number(row.amount||0),row.method,row.date||'']);
     }
     for(const row of tables.invoices||[]){
@@ -177,6 +179,8 @@ export const importCRMBackup=async()=>{
   const uri=result.assets?.[0]?.uri;
   if(!uri)throw new Error('Backup file could not be read.');
   const raw=await FileSystem.readAsStringAsync(uri,{encoding:FileSystem.EncodingType.UTF8});
-  await mergeBackup(JSON.parse(raw));
-  return {canceled:false};
+  const payload=JSON.parse(raw);
+  const safetyUri=await writeBackupFile(await buildBackup(),'VF_CRM_Safety_');
+  await mergeBackup(payload);
+  return {canceled:false,safetyUri};
 };
