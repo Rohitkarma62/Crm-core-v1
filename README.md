@@ -1,373 +1,397 @@
 # Vishwakarma Fabrication CRM
 
-> **Offline-first Android CRM for welding and fabrication workshop operations**
+## Workshop ka poora business ek hi app mein
 
-Vishwakarma Fabrication CRM is a purpose-built Android application for managing the complete day-to-day customer and job workflow of a welding/fabrication workshop. The application is designed around an **offline-first local SQLite data model**, so core business records remain available on the device without requiring a continuous internet connection.
+**Lead → Customer → Job → Payment → Invoice → Reports**
 
-The system connects the complete operational flow:
+Vishwakarma Fabrication CRM ek Android app hai jo welding aur fabrication workshop ke daily customer aur payment management ko simple, organized aur professional banata hai.
 
-**Lead → Customer → Job/Sale → Payment → Invoice → Reports**
-
-The goal is simple: replace scattered notebooks, chat messages, manual calculations, and disconnected payment records with one structured workshop management system.
+**Developed by Rohit Karma**
 
 ---
 
-## Product Overview
+## 📱 App ka main dashboard
 
-The CRM provides a focused business workflow for small workshop and fabrication businesses.
+Business ki important information ek hi jagah dekhein:
 
-### Core modules
-
-- **Dashboard**
-  - Total collection
-  - Pending amount
-  - Revenue
-  - Sales/job count
-  - Customer count
-  - Lead count
-  - Lead pipeline overview
-  - Recent activity
-  - Sales overview
-  - Offline status indicator
-  - Quick actions for common operations
-
-- **Lead Management**
-  - Create and edit leads
-  - Customer name and phone
-  - Lead source
-  - Lead details
-  - Follow-up date
-  - Pipeline/stage management
-  - Search by name, phone, or source
-  - Convert qualified leads into customers
-  - Delete unused leads
-  - Transaction-safe lead conversion
-
-- **Customer Management**
-  - Customer directory
-  - Customer profile
-  - Total work/sales value
-  - Paid amount
-  - Pending amount
-  - Sale/job count
-  - Work history
-  - Payment history
-  - Invoice history
-  - Lifetime work summary
-  - Total discount
-  - Average job value
-  - Discount rate
-  - Last job information
-  - Start a new job directly from a customer
-  - Safe customer deletion with linked local-data cleanup
-
-- **Job / Sales Management**
-  - Customer selection
-  - Work/job description
-  - Original amount
-  - Discount
-  - Final amount
-  - Paid amount
-  - Pending amount
-  - Payment status
-  - Customer-linked job history
-
-- **Payment Management**
-  - Record payments against jobs
-  - Payment amount validation
-  - Payment method tracking
-  - Payment screenshot attachment
-  - Local payment-asset storage
-  - Payment history
-  - Overpayment protection
-  - WhatsApp payment summary
-  - Payment data consistency checks
-
-- **Invoice Management**
-  - Offline invoice generation
-  - Invoice number
-  - Invoice date
-  - Business name and owner
-  - Business logo
-  - Customer name and phone
-  - Work description
-  - Original amount
-  - Discount
-  - Final amount
-  - Paid amount
-  - Pending amount
-  - Terms and conditions
-  - Signature
-  - Safe local file handling
-  - HTML escaping for invoice-generated content
-
-- **Reports**
-  - Revenue
-  - Collection
-  - Pending amount
-  - Sales count
-  - Payment-method breakdown
-  - Monthly performance
-  - Monthly revenue
-  - Monthly collection
-  - Monthly sales
-  - Monthly pending amount
-
-- **Company Settings**
-  - Business name
-  - Owner name
-  - Invoice terms
-  - Company logo
-  - Signature
-
----
-
-## End-to-End Business Workflow
-
-### 1. Capture a Lead
-A new enquiry can be stored with contact information, source, details, and follow-up information.
-
-### 2. Qualify the Lead
-Leads can be moved through defined stages and searched when follow-up is required.
-
-### 3. Convert to Customer
-A qualified lead can be converted into a customer using a transaction-safe workflow, avoiding partial conversion states.
-
-### 4. Create a Job
-The customer can be linked to a new welding/fabrication job with amount and discount information.
-
-### 5. Track Payments
-Payments are recorded against the job with method and optional proof/screenshot. The system protects against invalid over-collection.
-
-### 6. Generate an Invoice
-The job's financial information can be used to generate an offline invoice with workshop branding and customer details.
-
-### 7. Review Business Performance
-Dashboard and reports provide visibility into revenue, collection, pending amounts, jobs, customers, leads, and payment methods.
-
----
-
-## Reliability & Data Integrity
-
-The application is not built around a collection of loose UI screens. Core financial and relational operations are protected at the data layer.
-
-Implemented safeguards include:
-
-- SQLite schema versioning and migrations
-- Database triggers for relevant integrity rules
-- Exclusive transactions for critical sales/payment operations
-- Transaction-safe lead-to-customer conversion
-- Payment/customer/sale relationship validation
-- Overpayment rejection
-- Affected-row checks after critical updates
-- Date, phone, and monetary-value validation
-- Duplicate-lead prevention
-- Local file cleanup when related records are removed
-- Invoice file rollback protection
-- Company-asset lifecycle cleanup
-- Safe file-extension handling for payment attachments
-- HTML escaping for invoice-generated content
-
-These controls are intended to reduce inconsistent records, invalid financial states, and orphaned local files during normal application use.
-
----
-
-## Offline-First Architecture
-
-The application is designed for workshop environments where internet connectivity should not be a prerequisite for basic business operations.
-
-Core business data is stored locally using SQLite. This covers the primary CRM records and operational workflows, including:
-
-- Leads
+- Total collection
+- Pending payments
+- Total sales/jobs
 - Customers
-- Jobs / sales
-- Payments
-- Invoice-related data
-- Company settings
+- Leads
+- Revenue
+- Recent activity
+- Sales overview
+- Lead pipeline
+- Quick actions
 
-Local file assets such as payment screenshots and company assets are also managed with explicit lifecycle handling.
+### Business benefit
 
-**Important scope boundary:** this release is offline-first and does not claim cloud synchronization, multi-device synchronization, server-side backup, or multi-user access control.
-
----
-
-## Release & Engineering Quality
-
-The current application release is:
-
-**Version:** 1.0.2  
-**Platform:** Android  
-**Application:** Vishwakarma Fabrication CRM
-
-The repository includes an Android release workflow covering:
-
-1. Dependency installation
-2. Static JavaScript validation
-3. Expo project validation
-4. Dependency compatibility validation
-5. Native project generation
-6. Android release APK build
-7. Build artifact upload
-
-The latest verified release pipeline completed successfully after the current branding/release updates.
+**Aapko alag-alag notebook, calculation ya WhatsApp messages mein record dhoondhne ki zaroorat nahi.**
 
 ---
 
-## UI / Product Experience
+## 🎯 Lead Management
 
-The application is organized around the real operating sequence of a fabrication workshop rather than generic enterprise CRM terminology.
+Har new enquiry ko properly record karein aur follow-up miss hone se bachayein.
 
-The main navigation exposes:
+### Features
+
+- New lead add karein
+- Customer name & phone
+- Lead source
+- Requirement/details
+- Follow-up date
+- Lead stages
+- Search
+- Follow-up tracking
+- Quotation stage
+- Won lead tracking
+- Lead ko customer mein convert karein
+
+### Simple workflow
+
+**New → Contacted → Follow-up → Quotation → Won → Customer**
+
+---
+
+## 👥 Customer Management
+
+Har customer ka complete business record ek hi jagah.
+
+### Customer profile mein
+
+- Customer information
+- Total work value
+- Total paid
+- Total pending
+- Number of jobs
+- Work history
+- Payment history
+- Invoice history
+- Total discount
+- Average job value
+- Last job
+- New job directly create karne ka option
+
+### Business benefit
+
+Purane customer ka **kya kaam hua, kitna payment mila aur kitna pending hai**, sab quickly check kiya ja sakta hai.
+
+---
+
+## 🔧 Job / Sales Management
+
+Har welding ya fabrication work ko customer ke saath properly connect karein.
+
+### Track karein
+
+- Customer
+- Work description
+- Original amount
+- Discount
+- Final amount
+- Paid amount
+- Pending amount
+- Payment status
+
+### Example
+
+**Main Gate Fabrication**  
+Original: ₹45,000  
+Discount: ₹2,000  
+Final: ₹43,000  
+Paid: ₹25,000  
+Pending: ₹18,000
+
+Isse manual calculation aur payment confusion kam hota hai.
+
+---
+
+## 💰 Payment Management
+
+Workshop ke liye payment tracking sabse important hai, isliye payment workflow ko clearly structured rakha gaya hai.
+
+### Features
+
+- Job ke against payment record
+- Payment amount
+- Payment method
+- Payment history
+- Payment screenshot/proof
+- Pending balance
+- Overpayment protection
+- WhatsApp payment summary
+
+### Payment flow
+
+**Job Amount → Discount → Final Amount → Payment → Remaining Balance**
+
+---
+
+## 🧾 Professional Invoice
+
+Customer ke liye professional invoice generate karein.
+
+Invoice mein include ho sakta hai:
+
+- Business name
+- Owner name
+- Business logo
+- Customer name
+- Customer phone
+- Invoice number
+- Invoice date
+- Work description
+- Original amount
+- Discount
+- Final amount
+- Paid amount
+- Pending amount
+- Terms & conditions
+- Signature
+
+### Business benefit
+
+Customer ko clear aur professional billing information milti hai, aur invoice job/payment record se connected rehta hai.
+
+---
+
+## 📲 WhatsApp Sharing
+
+Payment-related summary ko WhatsApp ke through customer ke saath share karna easy hai.
+
+Isse customer ko:
+
+- Kitna total tha
+- Kitna paid hua
+- Kitna pending hai
+
+jaise important details communicate karna simple hota hai.
+
+---
+
+## 📊 Business Reports
+
+Owner ko business ki overall financial position samajhne mein help karta hai.
+
+### Reports include
+
+- Revenue
+- Collection
+- Pending amount
+- Total jobs
+- Payment methods
+- Monthly performance
+- Monthly revenue
+- Monthly collection
+- Monthly sales
+- Monthly pending amount
+
+### Business benefit
+
+**Sirf kaam kitna hua nahi, business kitna perform kar raha hai ye bhi clearly dekha ja sakta hai.**
+
+---
+
+## ⚡ Quick Actions
+
+Dashboard se common operations directly start kiye ja sakte hain:
+
+- New Lead
+- New Customer
+- New Sale
+- Payment
+
+Isse frequently used actions ke liye multiple screens navigate karne ki zaroorat kam hoti hai.
+
+---
+
+## 📶 Offline-First
+
+App ko workshop environment ko dhyan mein rakhkar design kiya gaya hai.
+
+Core business records device par locally available rehte hain, isliye basic day-to-day CRM work ke liye continuous internet connection required nahi hai.
+
+### Useful for
+
+- Workshop
+- Factory/garage environment
+- Areas with unstable internet
+- Field/site work
+- Daily customer management
+
+---
+
+## 🏢 Business Branding
+
+App ke andar business ki information customize ki ja sakti hai:
+
+- Business name
+- Owner name
+- Logo
+- Signature
+- Invoice terms
+
+Isse generated business documents ko workshop ke naam aur branding ke according configure kiya ja sakta hai.
+
+---
+
+## ⭐ Why Vishwakarma Fabrication CRM?
+
+### Simple
+
+Workshop owner ke daily workflow ke according focused interface.
+
+### Organized
+
+Lead, customer, job, payment aur invoice records connected.
+
+### Professional
+
+Dashboard, reports aur branded invoices business ko more organized presentation dete hain.
+
+### Offline-First
+
+Basic business records ke liye constant internet dependency nahi.
+
+### Financially Clear
+
+Paid, pending, discount aur final amounts ko structured workflow mein maintain karta hai.
+
+---
+
+## 🔄 Complete Business Workflow
+
+### Step 1
+**New Enquiry**
+
+Lead save karein.
+
+↓
+
+### Step 2
+**Follow-up**
+
+Lead ko pipeline stage ke through manage karein.
+
+↓
+
+### Step 3
+**Customer**
+
+Successful lead ko customer mein convert karein.
+
+↓
+
+### Step 4
+**Job**
+
+Customer ke liye welding/fabrication work create karein.
+
+↓
+
+### Step 5
+**Payment**
+
+Received payment aur remaining amount track karein.
+
+↓
+
+### Step 6
+**Invoice**
+
+Professional invoice generate karein.
+
+↓
+
+### Step 7
+**Reports**
+
+Business revenue, collection aur pending work review karein.
+
+---
+
+## 💼 Kis Business ke liye useful hai?
+
+Vishwakarma Fabrication CRM specially useful ho sakta hai:
+
+- Welding workshops
+- Fabrication workshops
+- Gate & grill businesses
+- Railing businesses
+- Custom metal-work businesses
+- Small fabrication contractors
+- Workshop owners managing multiple customer jobs
+
+---
+
+## 🛠 Future Customization
+
+Business ki requirement ke according future mein additional modules/custom workflows add kiye ja sakte hain.
+
+Possible extensions:
+
+- Inventory management
+- Additional reports
+- Custom invoice formats
+- Backup/synchronization
+- GST-related workflows
+- Additional sharing options
+- Business-specific fields and workflows
+
+**Note:** Ye future customization possibilities hain, current release ke included features nahi.
+
+---
+
+## 📦 Current Product
+
+| Detail | Information |
+|---|---|
+| Product | Vishwakarma Fabrication CRM |
+| Version | 1.0.2 |
+| Platform | Android |
+| Focus | Welding & Fabrication Workshop |
+| Architecture | Offline-first |
+| Developer | Rohit Karma |
+
+---
+
+## 📸 Product Screenshots
+
+The product documentation includes the verified application screens covering:
 
 - Dashboard
-- Leads
-- Customers
-- Sales / Jobs
-- Payments
-- More
+- Lead Management
+- Customer Management
+- Job / Sales
 - Reports
-- Company Settings
 
-The startup experience uses Vishwakarma Fabrication branding with the **VF** identity.
-
----
-
-## What This Product Solves
-
-Without a structured CRM, workshop information can become fragmented across:
-
-- Paper notebooks
-- WhatsApp conversations
-- Phone contacts
-- Separate payment notes
-- Manual calculations
-- Individual invoice files
-- Memory
-
-This CRM centralizes the operational record so that a customer, their jobs, payments, invoices, and history remain connected.
-
-### Business impact
-
-**Before**
-
-- Lead information scattered
-- Customer history difficult to retrieve
-- Manual payment calculations
-- Pending amounts easy to lose track of
-- Invoice preparation handled separately
-- Limited visibility into monthly performance
-
-**With the CRM**
-
-- Leads have a defined pipeline
-- Customers have a persistent work history
-- Jobs and payments remain connected
-- Paid and pending amounts are calculated from recorded payment data
-- Invoices can be generated from job information
-- Reports provide operational visibility
-- Core records remain available offline
+Screenshots are presented as **demo-data product previews**, so no real customer information is exposed.
 
 ---
 
-## Current Scope
+## 🔐 Business Records
 
-### Included
+The current release is designed around local/offline operation. Core CRM records are stored on the device rather than requiring a continuously connected online server.
 
-- Offline-first CRM
-- Lead pipeline
-- Customer management
-- Job/sales management
-- Payment tracking
-- Payment proof attachments
-- Invoice generation
-- WhatsApp payment summary
-- Business branding
-- Reports
-- Local SQLite persistence
-- Data-integrity protections
-- Android release workflow
-
-### Not Included in the Current Release
-
-To keep the product scope technically honest, the current release does **not** claim:
-
-- Cloud synchronization
-- Multi-device synchronization
-- User accounts / role-based access
-- Server-side database
-- Automatic cloud backup
-- Inventory management
-- GST/accounting integration
-- Online payment gateway
-- iOS production release
-- Enterprise multi-tenant infrastructure
-
-These can be treated as future product extensions rather than pretending they already exist. Humanity has enough software that does that.
+For business deployment, regular device-level backup practices should still be maintained because offline storage is not the same thing as automatic cloud backup.
 
 ---
 
-## Release Readiness Summary
+## 🚀 Product Summary
 
-| Area | Status |
-|---|---|
-| Core CRM workflow | Implemented |
-| Lead management | Implemented |
-| Customer management | Implemented |
-| Job / sales management | Implemented |
-| Payment tracking | Implemented |
-| Invoice workflow | Implemented |
-| Reports | Implemented |
-| Company branding | Implemented |
-| Offline local database | Implemented |
-| Financial validation | Implemented |
-| Local asset lifecycle handling | Implemented |
-| Static validation | Passed |
-| Expo validation | Passed |
-| Android release build | Passed |
-| CI artifact generation | Passed |
+**Vishwakarma Fabrication CRM** brings the essential workshop workflow into one Android application:
 
----
+**Get the enquiry.  
+Track the customer.  
+Manage the job.  
+Record the payment.  
+Generate the invoice.  
+Understand the business.**
 
-## Screenshots
+### Developed by
 
-Screenshots should be added here from the verified Android APK/build so the repository documentation shows the actual product UI rather than mockups.
+# Rohit Karma
 
-Recommended evidence set:
-
-1. **Dashboard** — KPI cards, pipeline, recent activity
-2. **Lead Pipeline** — lead stages and follow-up workflow
-3. **Customer Profile** — customer summary and work history
-4. **Job / Sale** — amount, discount, paid and pending values
-5. **Payment** — payment method, amount and proof attachment
-6. **Invoice** — branded invoice output
-7. **Reports** — revenue, collection and monthly performance
-8. **Company Settings** — logo, signature and invoice configuration
-
----
-
-## Technical Position
-
-Vishwakarma Fabrication CRM is intentionally focused rather than overloaded with unrelated enterprise features.
-
-Its strongest technical characteristics are:
-
-- Offline-first operation
-- Local transactional data model
-- Explicit financial validation
-- Connected CRM-to-payment workflow
-- Local invoice generation
-- Controlled file lifecycle
-- Release validation through CI
-- Workshop-specific operational design
-
-The product is suitable as a focused Android CRM foundation for a welding/fabrication workshop and can be extended as the business workflow grows.
-
----
-
-## Version
-
-**Vishwakarma Fabrication CRM — v1.0.2**
-
-**Android package:** `com.weldingworkshop.crm`
-
-**Release status:** Android release build successfully verified through CI.
+**Vishwakarma Fabrication CRM · Android · v1.0.2**
