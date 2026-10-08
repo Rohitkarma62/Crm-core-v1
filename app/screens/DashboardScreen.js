@@ -33,9 +33,9 @@ export default function DashboardScreen({navigation}){
    <Text style={s.sectionTitle}>Quick actions</Text>
    <View style={s.actions}>
      <QuickAction label="New Lead" onPress={()=>navigation.navigate('Leads')}/>
-     <QuickAction label="New Customer" onPress={()=>navigation.navigate('Customers')}/>
+     <QuickAction label="Customers" onPress={()=>navigation.navigate('Customers')}/>
      <QuickAction label="New Sale" onPress={()=>navigation.navigate('Sales')}/>
-     <QuickAction label="Payment" onPress={()=>navigation.navigate('Sales')}/>
+     <QuickAction label="Sales & Payments" onPress={()=>navigation.navigate('Sales')}/>
    </View>
 
    <View style={s.sectionHeader}><Text style={s.sectionTitle}>Lead pipeline</Text><Pressable onPress={()=>navigation.navigate('Leads')}><Text style={s.link}>View all</Text></Pressable></View>
