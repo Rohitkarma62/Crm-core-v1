@@ -13,11 +13,11 @@ const empty={name:'',phone:'',details:'',source:'',status:'New',stages:'New',fol
 
 export default function LeadsScreen({navigation}){
  const {leads,loadLeads,saveLead,deleteLead,moveLead,convertLead}=useCRMStore();
- const [modal,setModal]=useState(false),[form,setForm]=useState(empty),[query,setQuery]=useState('');
+ const [modal,setModal]=useState(false),[form,setForm]=useState(empty),[query,setQuery]=useState(''),[busy,setBusy]=useState(false);
  useFocusEffect(React.useCallback(()=>{loadLeads().catch(()=>{})},[loadLeads]));
  const filtered=useMemo(()=>leads.filter(x=>(x.name+' '+x.phone+' '+x.source).toLowerCase().includes(query.toLowerCase())),[leads,query]);
  const edit=(lead)=>{setForm({...lead});setModal(true)};
- const save=async()=>{if(!form.name.trim()||!form.phone.trim()){Alert.alert('Required','Name aur phone required hai.');return}try{await saveLead(form);setForm(empty);setModal(false)}catch(e){Alert.alert('Lead error',e.message)}};
+ const save=async()=>{if(busy)return;if(!form.name.trim()||!form.phone.trim()){Alert.alert('Required','Name aur phone required hai.');return}try{setBusy(true);await saveLead(form);setForm(empty);setModal(false)}catch(e){Alert.alert('Lead error',e.message)}finally{setBusy(false)}};
  const remove=(id)=>Alert.alert('Delete lead?','Ye lead permanently delete ho jayegi.',[{text:'Cancel'},{text:'Delete',style:'destructive',onPress:()=>deleteLead(id)}]);
  const convert=(id)=>Alert.alert('Convert to customer?','Lead ko customer mein convert karna hai?',[{text:'Cancel'},{text:'Convert',onPress:async()=>{try{const customerId=await convertLead(id);navigation.navigate('Sales',{customerId})}catch(e){Alert.alert('Convert error',e.message)}}}]);
  return <SafeAreaView style={styles.safe}>
@@ -39,7 +39,7 @@ export default function LeadsScreen({navigation}){
    <Input label="Details" value={form.details} onChangeText={v=>setForm({...form,details:v})} placeholder="Requirement / welding work"/>
    <Input label="Follow-up date" value={form.follow_up_date||''} onChangeText={v=>setForm({...form,follow_up_date:v})} placeholder="YYYY-MM-DD"/>
    <Text style={styles.label}>Stage</Text><View style={styles.wrap}>{STAGES.map(s=><Pressable key={s} onPress={()=>setForm({...form,stages:s,status:s})} style={[styles.option,form.stages===s&&styles.selected]}><Text>{s}</Text></Pressable>)}</View>
-   <Button title="Save Lead" onPress={save}/><Button title="Cancel" variant="secondary" onPress={()=>setModal(false)}/>
+   <Button title="Save Lead" loading={busy} onPress={save}/><Button title="Cancel" variant="secondary" onPress={()=>setModal(false)}/>
   </ScrollView></SafeAreaView></Modal>
  </SafeAreaView>
 }
