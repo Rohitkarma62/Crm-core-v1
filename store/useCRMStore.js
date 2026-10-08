@@ -168,7 +168,7 @@ export const useCRMStore=create((set,get)=>({
     });
     await refreshAfterMutation(()=>get().loadSales(),()=>get().loadCustomers(),()=>get().refreshDashboard(),()=>get().loadPayments(saleId));
   },'Payment could not be saved'),
-  saveInvoice:async({saleId,invoiceNo,pdfPath,date})=>runAction(async()=>{
+  saveInvoice:async({saleId,invoiceNo,pdfPath,filePath,date})=>runAction(async()=>{
     if(!saleId||!invoiceNo) throw new Error('Sale and invoice number are required');
     const db=await getDatabase();
     const sale=await db.getFirstAsync('SELECT id FROM sales WHERE id=?',[saleId]);
@@ -176,7 +176,7 @@ export const useCRMStore=create((set,get)=>({
     await db.runAsync(`INSERT INTO invoices(sale_id,invoice_no,pdf_path,file_path,date)
       VALUES(?,?,?,?,?)
       ON CONFLICT(invoice_no) DO UPDATE SET sale_id=excluded.sale_id,pdf_path=excluded.pdf_path,file_path=excluded.file_path,date=excluded.date`,
-      [saleId,invoiceNo,pdfPath||null,arguments[0]?.filePath||null,normalizeDate(date)]);
+      [saleId,invoiceNo,pdfPath||null,filePath||null,normalizeDate(date)]);
   },'Invoice could not be saved'),
   loadReports:async()=>{
     const db=await getDatabase();
