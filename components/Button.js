@@ -1,4 +1,3 @@
-import React from 'react';
 import {ActivityIndicator,Pressable,StyleSheet,Text} from 'react-native';
 import {colors,radius,spacing,typography} from '../theme';
 
