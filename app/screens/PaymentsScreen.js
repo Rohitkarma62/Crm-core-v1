@@ -1,4 +1,4 @@
-import React,{useState} from 'react';
+import React,{useEffect,useRef,useState} from 'react';
 import {useFocusEffect} from '@react-navigation/native';
 import {Alert,Image,SafeAreaView,ScrollView,StyleSheet,Text,View,Linking} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -20,6 +20,8 @@ export default function PaymentsScreen({route}){
  const {sales,loadSales,payments,loadPayments,addPayment,saveInvoice,companySettings,loadCompanySettings}=useCRMStore();
  const sale=sales.find(x=>Number(x.id)===Number(saleId));
  const [amount,setAmount]=useState(''),[method,setMethod]=useState('Cash'),[screenshot,setScreenshot]=useState(null),[busy,setBusy]=useState(false);
+ const pendingScreenshot=useRef(null);
+ useEffect(()=>()=>{const path=pendingScreenshot.current;if(path)FileSystem.deleteAsync(path,{idempotent:true}).catch(()=>{})},[]);
 
  useFocusEffect(React.useCallback(()=>{loadSales().catch(()=>{});loadCompanySettings().catch(()=>{});if(saleId)loadPayments(saleId).catch(()=>{})},[saleId,loadSales,loadCompanySettings,loadPayments]));
 
@@ -37,7 +39,10 @@ export default function PaymentsScreen({route}){
      const ext=sourceName.includes('.')?sourceName.split('.').pop().toLowerCase():'jpg';
      const safeExt=/^(jpg|jpeg|png|webp|heic)$/.test(ext)?ext:'jpg';
      const target=dest+'payment_'+Date.now()+'.'+safeExt;
+     const previous=pendingScreenshot.current;
      await FileSystem.copyAsync({from:asset.uri,to:target});
+     if(previous&&previous!==target)await FileSystem.deleteAsync(previous,{idempotent:true}).catch(()=>{});
+     pendingScreenshot.current=target;
      setScreenshot(target);
    }catch(e){Alert.alert('Screenshot error',e.message)}
  };
@@ -49,11 +54,13 @@ export default function PaymentsScreen({route}){
      setBusy(true);
      await addPayment({saleId,customerId:sale.customer_id,amount,method,screenshotUri:attachedScreenshot});
      setAmount('');
+     pendingScreenshot.current=null;
      setScreenshot(null);
      Alert.alert('Success','Payment saved offline.');
    }catch(e){
      if(attachedScreenshot){
        try{await FileSystem.deleteAsync(attachedScreenshot,{idempotent:true})}catch{}
+       pendingScreenshot.current=null;
        setScreenshot(null);
      }
      Alert.alert('Payment error',e.message);
