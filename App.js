@@ -1,4 +1,4 @@
-import React,{useEffect,useState} from 'react';
+import {useEffect,useState} from 'react';
 import {View,ActivityIndicator,Text,StyleSheet,Appearance} from 'react-native';
 import {NavigationContainer,DarkTheme} from '@react-navigation/native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
