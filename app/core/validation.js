@@ -15,7 +15,7 @@ export function normalizePhone(value){
 
 export function validatePhone(value){
   const phone=normalizePhone(value);
-  if(phone.length!==10) throw new Error('Valid 10-digit phone number required');
+  if(phone.length!==10||!/[6-9]/.test(phone[0])) throw new Error('Valid 10-digit mobile number required');
   return phone;
 }
 
@@ -32,8 +32,14 @@ export function nonNegativeMoney(value,label='Amount'){
 }
 
 export function normalizeDate(value){
-  const date=value?new Date(value):new Date();
+  const raw=cleanString(value);
+  if(!raw)return new Date().toISOString();
+  const date=new Date(raw);
   if(Number.isNaN(date.getTime())) throw new Error('Invalid date');
+  if(/^\d{4}-\d{2}-\d{2}$/.test(raw)){
+    const normalized=date.toISOString().slice(0,10);
+    if(normalized!==raw) throw new Error('Invalid date');
+  }
   return date.toISOString();
 }
 
