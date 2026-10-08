@@ -12,15 +12,6 @@
     "assetBundlePatterns": [
       "**/*"
     ],
-    "plugins": [
-      [
-        "react-native-share",
-        {
-          "android": [
-            "com.whatsapp"
-          ]
-        }
-      ]
-    ]
+    "plugins": []
   }
 }
