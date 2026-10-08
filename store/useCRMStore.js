@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { getDatabase } from '../app/db/dbSetup';
+import * as FileSystem from 'expo-file-system/legacy';
 import { LEAD_STAGES,PAYMENT_METHODS } from '../app/core/constants';
 import { normalizeDate,normalizeError,nonNegativeMoney,positiveMoney,requiredText,validatePhone } from '../app/core/validation';
 
@@ -21,6 +22,12 @@ const runAction=async(action,fallback)=>{
 
 const refreshAfterMutation=async(...actions)=>{
   await Promise.all(actions.map(action=>Promise.resolve().then(action).catch(()=>{})));
+};
+
+const deleteLocalFiles=async(paths)=>{
+  await Promise.all((paths||[]).filter(Boolean).map(async path=>{
+    try{await FileSystem.deleteAsync(path,{idempotent:true})}catch{}
+  }));
 };
 
 export const useCRMStore=create((set,get)=>({
@@ -198,8 +205,13 @@ export const useCRMStore=create((set,get)=>({
   deleteCustomer:async(id)=>runAction(async()=>{
     if(!id) throw new Error('Customer not found');
     const db=await getDatabase();
+    const files=await db.getAllAsync(
+      'SELECT screenshot_uri path FROM payments WHERE customer_id=? AND screenshot_uri IS NOT NULL UNION ALL SELECT i.pdf_path path FROM invoices i JOIN sales s ON s.id=i.sale_id WHERE s.customer_id=? AND i.pdf_path IS NOT NULL',
+      [id,id]
+    );
     const result=await db.runAsync('DELETE FROM customers WHERE id=?',[id]);
     if(!result.changes) throw new Error('Customer not found');
+    await deleteLocalFiles(files?.map(x=>x.path));
     await refreshAfterMutation(()=>get().loadCustomers(),()=>get().loadSales(),()=>get().refreshDashboard());
   },'Customer deletion failed'),
   loadCompanySettings:async()=>{
@@ -209,9 +221,18 @@ export const useCRMStore=create((set,get)=>({
   },
   saveCompanySettings:async(data)=>{
     const db=await getDatabase();
-    const row=await db.getFirstAsync('SELECT id FROM company_settings LIMIT 1');
-    if(row) await db.runAsync('UPDATE company_settings SET name=?,owner=?,logo_uri=?,signature_uri=?,terms=? WHERE id=?',[data.name||'',data.owner||'',data.logo_uri||null,data.signature_uri||null,data.terms||'',row.id]);
-    else await db.runAsync('INSERT INTO company_settings(name,owner,logo_uri,signature_uri,terms) VALUES(?,?,?,?,?)',[data.name||'',data.owner||'',data.logo_uri||null,data.signature_uri||null,data.terms||'']);
+    const row=await db.getFirstAsync('SELECT * FROM company_settings LIMIT 1');
+    const nextLogo=data.logo_uri||null;
+    const nextSignature=data.signature_uri||null;
+    if(row){
+      await db.runAsync('UPDATE company_settings SET name=?,owner=?,logo_uri=?,signature_uri=?,terms=? WHERE id=?',[data.name||'',data.owner||'',nextLogo,nextSignature,data.terms||'',row.id]);
+      await deleteLocalFiles([
+        row.logo_uri&&row.logo_uri!==nextLogo?row.logo_uri:null,
+        row.signature_uri&&row.signature_uri!==nextSignature?row.signature_uri:null
+      ]);
+    }else{
+      await db.runAsync('INSERT INTO company_settings(name,owner,logo_uri,signature_uri,terms) VALUES(?,?,?,?,?)',[data.name||'',data.owner||'',nextLogo,nextSignature,data.terms||'']);
+    }
     return get().loadCompanySettings();
   }
 }));
