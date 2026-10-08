@@ -7,13 +7,13 @@ import{colors,spacing,typography}from'../../theme';
 import{exportCRMBackup,importCRMBackup}from'../core/backup';
 
 export default function SettingsScreen(){
- const{loadCompanySettings,saveCompanySettings}=useCRMStore();
+ const{loadCompanySettings,loadLeads,loadCustomers,loadSales,refreshDashboard,loadReports}=useCRMStore();
  const[d,setD]=useState({name:'',owner:'',logo_uri:'',signature_uri:'',terms:''});
  useFocusEffect(React.useCallback(()=>{loadCompanySettings().then(x=>x&&setD(x)).catch(()=>{})},[loadCompanySettings]));
  const pick=async field=>{try{const p=await ImagePicker.requestMediaLibraryPermissionsAsync();if(!p.granted){Alert.alert('Permission required','Gallery permission required.');return}const r=await ImagePicker.launchImageLibraryAsync({mediaTypes:['images'],quality:.85});if(r.canceled)return;const asset=r.assets?.[0];if(!asset?.uri)throw new Error('Selected image could not be read.');const dest=FileSystem.documentDirectory+'company/';await FileSystem.makeDirectoryAsync(dest,{intermediates:true});const rawExt=String(asset.fileName||'').split('.').pop()?.toLowerCase()||'jpg';const ext=/^(jpg|jpeg|png|webp|heic)$/.test(rawExt)?rawExt:'jpg';const target=dest+field+'_'+Date.now()+'.'+ext;await FileSystem.copyAsync({from:asset.uri,to:target});setD(x=>({...x,[field]:target}))}catch(e){Alert.alert('Image error',e.message)}};
  const save=async()=>{try{await saveCompanySettings(d);Alert.alert('Saved','Company settings saved offline.')}catch(e){Alert.alert('Save error',e.message)}};
  const backup=async()=>{try{const r=await exportCRMBackup();if(r.saved)Alert.alert('Backup saved','Complete CRM backup Downloads folder me save ho gaya.');else Alert.alert('Backup ready','Backup file app storage me ready hai, lekin Downloads permission nahi mili.')}catch(e){Alert.alert('Backup error',e.message)}};
- const restore=async()=>{try{const r=await importCRMBackup();if(r.canceled)return;await loadCompanySettings();Alert.alert('Restore complete','Backup data merge ho gaya. Existing matching records duplicate nahi kiye gaye.')}catch(e){Alert.alert('Restore error',e.message)}};
+ const restore=()=>Alert.alert('Restore backup','Current CRM data ko change kiya jayega. Import se pehle app ek automatic safety backup banayega. Continue karna hai?',[{text:'Cancel',style:'cancel'},{text:'Continue',style:'destructive',onPress:async()=>{try{const r=await importCRMBackup();if(r.canceled)return;await Promise.all([loadCompanySettings(),loadLeads(),loadCustomers(),loadSales(),refreshDashboard(),loadReports()]);Alert.alert('Restore complete','Backup data merge ho gaya. Existing matching records duplicate nahi kiye gaye.')}catch(e){Alert.alert('Restore error',e.message)}}}]);
  return <SafeAreaView style={s.safe}><ScrollView contentContainerStyle={s.content}>
   <Text style={s.eyebrow}>WORKSHOP PROFILE</Text><Text style={s.title}>Company Settings</Text><Text style={s.sub}>These details appear on locally generated invoices.</Text>
   <Input label="Business name" value={d.name} onChangeText={v=>setD({...d,name:v})} placeholder="Welding Workshop"/>
