@@ -7,9 +7,11 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Keep the current build running. Android release builds are long-running,
+# and cancelling one on every new push prevents APK verification and upload.
 concurrency:
   group: android-release-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   android-release:
