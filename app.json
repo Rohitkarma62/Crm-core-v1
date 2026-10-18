@@ -5,9 +5,14 @@
     "version": "1.0.2",
     "orientation": "portrait",
     "newArchEnabled": false,
+    "icon": "./assets/icon.png",
     "android": {
       "package": "com.weldingworkshop.crm",
-      "versionCode": 3
+      "versionCode": 4,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#091320"
+      }
     },
     "assetBundlePatterns": [
       "**/*"
