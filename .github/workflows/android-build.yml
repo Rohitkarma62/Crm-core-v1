@@ -39,8 +39,24 @@ jobs:
       - name: Build release APK
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon
-      - name: Upload APK
+      - name: Verify APK and create SHA-256 checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="android/app/build/outputs/apk/release/app-release.apk"
+          test -s "$apk" || { echo "::error::Release APK is missing or empty"; exit 1; }
+
+          apksigner="$(find "${ANDROID_HOME:?ANDROID_HOME is not configured}/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -n "$apksigner" || { echo "::error::Android apksigner tool was not found"; exit 1; }
+          "$apksigner" verify --verbose --print-certs "$apk"
+
+          sha256sum "$apk" | tee "${apk}.sha256"
+          echo "APK size: $(stat -c '%s bytes' "$apk")"
+      - name: Upload APK and checksum
         uses: actions/upload-artifact@v4
         with:
           name: welding-workshop-crm-release
-          path: android/app/build/outputs/apk/release/app-release.apk
+          path: |
+            android/app/build/outputs/apk/release/app-release.apk
+            android/app/build/outputs/apk/release/app-release.apk.sha256
+          if-no-files-found: error
